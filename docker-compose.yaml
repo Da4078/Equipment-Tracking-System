@@ -1,0 +1,15 @@
+services:
+  postgres_db:
+    image: postgres:17-alpine
+    container_name: equipment_db
+    restart: always
+    ports:
+      - "5432:5432"
+    environment:
+      POSTGRES_DB: equipment_db
+      POSTGRES_USER: daniel
+      POSTGRES_PASSWORD: password
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+volumes:
+  pgdata:
