@@ -1,8 +1,7 @@
 services:
-  postgres_db:
+  postgres:
     image: postgres:17-alpine
-    container_name: equipment_db
-    restart: always
+    container_name: equipment-db
     ports:
       - "5432:5432"
     environment:
@@ -10,6 +9,20 @@ services:
       POSTGRES_USER: daniel
       POSTGRES_PASSWORD: password
     volumes:
-      - pgdata:/var/lib/postgresql/data
+      - postgres_data:/var/lib/postgresql/data
+  app:
+    build:  .
+    container_name: equipment-app
+    depends_on:
+      - postgres
+    environment:
+      SPRING_PROFILES_ACTIVE: docker
+      DB_HOST: postgres
+      DB_PORT: 5432
+      DB_NAME: equipment_db
+      DB_USER: daniel
+      DB_PASSWORD: password
+    ports:
+      - "8081:8080"
 volumes:
-  pgdata:
+  postgres_data:
