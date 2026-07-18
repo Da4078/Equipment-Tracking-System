@@ -43,13 +43,13 @@ You must implement the following:
 
 Build a simple web interface on top of your API. It does not need to be fancy, but it must be functional and cover the main workflows:
 
-1. **Login** — authenticate against the backend and respect the user's role.
+1. **Login** — authenticate against the backend and respect the employee's role.
 2. **Employee list and detail** — view employees, see which equipment each one currently holds, and create/edit an employee.
 3. **Equipment list** — view all equipment with its current status and filter by status or type.
 4. **Assign / return** — issue a piece of equipment to an employee and record returns from the interface.
 5. **Offboarding** — a screen or action to mark an employee as having left, which clearly shows the error when they still hold equipment.
 6. **Dashboard or overview** — a simple view of what's outstanding and what's available.
-7. **Validation and error handling** — show the backend's validation and business-rule errors to the user in a readable way.
+7. **Validation and error handling** — show the backend's validation and business-rule errors to the employee in a readable way.
 
 ---
 
