@@ -1,6 +1,0 @@
-spring:
-  datasource:
-    url: jdbc:postgresql://postgres:5432/equipment_db
-    username: daniel
-    password: password
-    driver-class-name: org.postgresql.Driver
