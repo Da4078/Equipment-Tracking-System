@@ -50,7 +50,6 @@ public class EquipmentService {
         equipment.setModel(equipmentDTO.getModel());
         equipment.setStatus(equipmentDTO.getStatus());
 
-
         return equipmentRepository.save(equipment);
     }
 
