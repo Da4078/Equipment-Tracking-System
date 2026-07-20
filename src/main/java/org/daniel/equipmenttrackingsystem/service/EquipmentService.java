@@ -24,6 +24,8 @@ public class EquipmentService {
         Equipment equipment = new Equipment();
         equipment.setEquipmentName(equipmentDTO.getEquipmentName());
         equipment.setType(equipmentDTO.getType());
+        equipment.setBrand(equipmentDTO.getBrand());
+        equipment.setModel(equipmentDTO.getModel());
         equipment.setStatus(equipmentDTO.getStatus());
         equipment.setSerialNumber(equipmentDTO.getSerialNumber());
 
@@ -39,10 +41,13 @@ public class EquipmentService {
     }
 
     public Equipment updateEquipment(UUID id, EquipmentDTO equipmentDTO){
-        Equipment equipment = equipmentRepository.findById(id).orElseThrow(() -> new IllegalArgumentException("Equipment not found"));
+        Equipment equipment = equipmentRepository.findById(id)
+                .orElseThrow(() -> new IllegalArgumentException("Equipment not found"));
 
         equipment.setEquipmentName(equipmentDTO.getEquipmentName());
         equipment.setType(equipmentDTO.getType());
+        equipment.setBrand(equipmentDTO.getBrand());
+        equipment.setModel(equipmentDTO.getModel());
         equipment.setStatus(equipmentDTO.getStatus());
 
         return equipmentRepository.save(equipment);

@@ -5,6 +5,7 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
 import org.daniel.equipmenttrackingsystem.enums.EquipmentStatus;
+import org.daniel.equipmenttrackingsystem.enums.EquipmentType;
 
 import java.util.UUID;
 
@@ -16,7 +17,9 @@ public class EquipmentDTO {
 
     private UUID id;
     private String equipmentName;
-    private String type;
+    private EquipmentType type;
+    private String brand;
+    private String model;
     private EquipmentStatus status;
     private String serialNumber;
 }
