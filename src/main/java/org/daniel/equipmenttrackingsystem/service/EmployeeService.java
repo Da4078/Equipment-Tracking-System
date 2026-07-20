@@ -3,6 +3,8 @@ package org.daniel.equipmenttrackingsystem.service;
 import org.daniel.equipmenttrackingsystem.dto.EmployeeDTO;
 import org.daniel.equipmenttrackingsystem.model.Employee;
 import org.daniel.equipmenttrackingsystem.repository.EmployeeRepository;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
@@ -37,8 +39,9 @@ public class EmployeeService {
         return employeeRepository.findById(id);
     }
 
-    public List<Employee> getAllUsers(){
-        return employeeRepository.findAll();
+    public Page<Employee> getAllUsers(Pageable pageable){
+        return employeeRepository
+                .findAll(pageable);
     }
 
     public Employee updateUser(UUID id, EmployeeDTO employeeDTO){
