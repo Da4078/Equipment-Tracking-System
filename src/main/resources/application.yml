@@ -5,6 +5,10 @@ spring:
     password: password
     driver-class-name: org.postgresql.Driver
 
+  data:
+    web:
+      pageable:
+        one-indexed-parameters: true
   jpa:
     database-platform: org.hibernate.dialect.PostgreSQLDialect
     hibernate:
