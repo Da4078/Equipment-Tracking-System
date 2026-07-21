@@ -7,8 +7,6 @@ import lombok.Setter;
 import org.daniel.equipmenttrackingsystem.enums.EquipmentStatus;
 import org.daniel.equipmenttrackingsystem.enums.EquipmentType;
 import org.daniel.equipmenttrackingsystem.model.Equipment;
-import org.daniel.equipmenttrackingsystem.model.User;
-
 import java.util.UUID;
 
 @Getter

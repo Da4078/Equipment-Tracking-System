@@ -1,7 +1,6 @@
 package org.daniel.equipmenttrackingsystem.controller;
 
 import org.daniel.equipmenttrackingsystem.dto.EquipmentDTO;
-import org.daniel.equipmenttrackingsystem.model.Equipment;
 import org.daniel.equipmenttrackingsystem.service.EquipmentService;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;

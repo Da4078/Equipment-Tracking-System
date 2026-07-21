@@ -5,8 +5,6 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
 import org.daniel.equipmenttrackingsystem.model.Employee;
-import org.daniel.equipmenttrackingsystem.model.User;
-
 import java.time.LocalDate;
 import java.util.UUID;
 

@@ -5,7 +5,6 @@ import org.daniel.equipmenttrackingsystem.dto.AssignmentDTO;
 import org.daniel.equipmenttrackingsystem.service.AssignmentService;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
-
 import java.util.UUID;
 
 @RestController
