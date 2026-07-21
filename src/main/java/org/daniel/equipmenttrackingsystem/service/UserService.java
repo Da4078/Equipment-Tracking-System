@@ -16,28 +16,26 @@ public class UserService {
 
     public UserService(UserRepository userRepository){ this.userRepository = userRepository;}
 
-    public User createUser(UserDTO userDTO){
+    public UserDTO createUser(UserDTO userDTO){
         if(userRepository.existsByEmail(userDTO.getEmail())){
             throw new IllegalArgumentException("User already exists");
         }
 
-        User user = new User();
-        user.setFirstName(userDTO.getFirstName());
-        user.setLastName(userDTO.getLastName());
-        user.setEmail(userDTO.getEmail());
-
-        return userRepository.save(user);
+        User user = userDTO.toEntity();
+        User savedUser = userRepository.save(user);
+        return UserDTO.fromEntity(savedUser);
     }
 
-    public Optional<User> getUserById(UUID id){
-        return userRepository.findById(id);
+    public Optional<UserDTO> getUserById(UUID id){
+        return userRepository.findById(id).map(UserDTO::fromEntity);
     }
 
-    public List<User> getAllUsers(){
-        return userRepository.findAll();
+    public List<UserDTO> getAllUsers(){
+
+        return userRepository.findAll().stream().map(UserDTO::fromEntity).toList();
     }
 
-    public User updateUser(UUID id, UserDTO userDTO){
+    public UserDTO updateUser(UUID id, UserDTO userDTO){
         User user = userRepository.findById(id)
                 .orElseThrow(() -> new IllegalArgumentException("User not found"));
 
@@ -45,7 +43,9 @@ public class UserService {
         user.setLastName(userDTO.getLastName());
         user.setEmail(userDTO.getEmail());
 
-        return userRepository.save(user);
+        User updatedUser = userRepository.save(user);
+
+        return UserDTO.fromEntity(updatedUser);
 
     }
 

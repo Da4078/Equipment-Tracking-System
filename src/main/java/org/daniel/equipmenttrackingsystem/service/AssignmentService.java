@@ -2,6 +2,7 @@ package org.daniel.equipmenttrackingsystem.service;
 
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
+import org.daniel.equipmenttrackingsystem.dto.AssignmentDTO;
 import org.daniel.equipmenttrackingsystem.enums.EquipmentStatus;
 import org.daniel.equipmenttrackingsystem.model.Assignment;
 import org.daniel.equipmenttrackingsystem.model.Employee;
@@ -23,8 +24,30 @@ public class AssignmentService {
     private final EquipmentRepository equipmentRepository;
 
 
+    private AssignmentDTO mapToDto(Assignment assignment){
+
+        AssignmentDTO assignmentDTO = new AssignmentDTO();
+        assignmentDTO.setId(assignment.getId());
+
+        if(assignment.getEmployee() != null){
+            assignmentDTO.setEmployeeId(assignment.getEmployee().getId());
+            assignmentDTO.setEmployeeName(assignment.getEmployee().getFirstName()
+                    + " " + assignment.getEmployee().getLastName());
+        }
+
+        if(assignment.getEquipment() != null){
+            assignmentDTO.setEquipmentId(assignment.getEquipment().getId());
+            assignmentDTO.setEquipmentName(assignment.getEquipment().getEquipmentName());
+        }
+
+        assignmentDTO.setAssignedAt(assignment.getAssignedAt());
+        assignmentDTO.setReturnedAt(assignment.getReturnedAt());
+
+        return assignmentDTO;
+    }
+
     @Transactional
-    public Assignment assignEquipment(UUID employeeId, UUID equipmentId){
+    public AssignmentDTO assignEquipment(UUID employeeId, UUID equipmentId){
         Employee employee = employeeRepository.findById(employeeId)
                 .orElseThrow(() -> new RuntimeException("Employee not found"));
 
@@ -35,25 +58,28 @@ public class AssignmentService {
         Equipment equipment = equipmentRepository.findById(equipmentId)
                 .orElseThrow(() -> new RuntimeException("Equipment not found"));
 
+        if(equipment.getStatus() == EquipmentStatus.RETIRED){
+            throw new RuntimeException("Cannot assign equipment that is retired");
+        }
         if(equipment.getStatus() != EquipmentStatus.AVAILABLE){
-            throw new RuntimeException("Equipment is not available");
+            throw new RuntimeException("Equipment is not available for assignment");
         }
 
         Assignment assignment = new Assignment();
-
         assignment.setEmployee(employee);
         assignment.setEquipment(equipment);
         assignment.setAssignedAt(LocalDateTime.now());
 
         equipment.setStatus(EquipmentStatus.ASSIGNED);
-
         equipmentRepository.save(equipment);
 
-        return assignmentRepository.save(assignment);
+        Assignment saved = assignmentRepository.save(assignment);
+
+        return mapToDto(saved);
     }
 
     @Transactional
-    public Assignment returnEquipment(UUID assignmentId){
+    public AssignmentDTO returnEquipment(UUID assignmentId){
         Assignment assignment = assignmentRepository.findById(assignmentId)
                 .orElseThrow(() -> new RuntimeException("Assignment not found"));
 
@@ -68,6 +94,8 @@ public class AssignmentService {
 
         equipmentRepository.save(equipment);
 
-        return assignmentRepository.save(assignment);
+        Assignment saved = assignmentRepository.save(assignment);
+
+        return mapToDto (saved);
     }
 }

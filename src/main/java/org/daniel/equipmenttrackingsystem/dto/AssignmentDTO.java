@@ -15,8 +15,13 @@ import java.util.UUID;
 @NoArgsConstructor
 public class AssignmentDTO {
     private UUID id;
-    private Employee employee;
-    private Equipment equipment;
+
+    private UUID employeeId;
+    private String employeeName;
+
+    private UUID equipmentId;
+    private String equipmentName;
+
     private LocalDateTime assignedAt;
     private LocalDateTime returnedAt;
 }
