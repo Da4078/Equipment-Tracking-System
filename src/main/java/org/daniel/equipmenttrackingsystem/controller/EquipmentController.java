@@ -1,12 +1,13 @@
 package org.daniel.equipmenttrackingsystem.controller;
 
-import org.daniel.equipmenttrackingsystem.dto.EquipmentDTO;
+import org.daniel.equipmenttrackingsystem.dto.EquipmentRequest;
+import org.daniel.equipmenttrackingsystem.dto.EquipmentResponse;
 import org.daniel.equipmenttrackingsystem.service.EquipmentService;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
-import java.util.Optional;
 import java.util.UUID;
 
 @RestController
@@ -15,31 +16,36 @@ public class EquipmentController {
 
     private final EquipmentService equipmentService;
 
-    public EquipmentController(EquipmentService equipmentService){this.equipmentService = equipmentService;}
+    public EquipmentController(EquipmentService equipmentService) {
+        this.equipmentService = equipmentService;
+    }
 
     @PostMapping
-    public ResponseEntity<EquipmentDTO> createEquipment(@RequestBody EquipmentDTO equipmentDTO){
-        return ResponseEntity.ok(equipmentService.createEquipment(equipmentDTO));
+    public ResponseEntity<EquipmentResponse> createEquipment(@RequestBody EquipmentRequest equipmentRequest) {
+        return ResponseEntity.status(HttpStatus.CREATED)
+                .body(equipmentService.createEquipment(equipmentRequest));
     }
 
     @GetMapping("/{id}")
-    public ResponseEntity<Optional<EquipmentDTO>> getEquipment(@PathVariable UUID id){
-        return ResponseEntity.ok(equipmentService.getEquipmentById(id));
+    public ResponseEntity<EquipmentResponse> getEquipmentById(@PathVariable UUID id) {
+        return equipmentService.getEquipmentById(id)
+                .map(ResponseEntity::ok)
+                .orElse(ResponseEntity.notFound().build());
     }
 
     @GetMapping
-    public ResponseEntity<List<EquipmentDTO>> getEquipment(){
+    public ResponseEntity<List<EquipmentResponse>> getAllEquipment() {
         return ResponseEntity.ok(equipmentService.getAllEquipment());
     }
 
     @PutMapping("/{id}")
-    public ResponseEntity<EquipmentDTO> updateEquipment(@PathVariable UUID id,
-                                                     @RequestBody EquipmentDTO equipmentDTO){
-        return ResponseEntity.ok(equipmentService.updateEquipment(id, equipmentDTO));
+    public ResponseEntity<EquipmentResponse> updateEquipment(@PathVariable UUID id,
+                                                             @RequestBody EquipmentRequest equipmentRequest) {
+        return ResponseEntity.ok(equipmentService.updateEquipment(id, equipmentRequest));
     }
 
     @DeleteMapping("/{id}")
-    public ResponseEntity<EquipmentDTO> deleteEquipment(@PathVariable UUID id){
+    public ResponseEntity<Void> deleteEquipment(@PathVariable UUID id) {
         equipmentService.deleteEquipment(id);
         return ResponseEntity.noContent().build();
     }
