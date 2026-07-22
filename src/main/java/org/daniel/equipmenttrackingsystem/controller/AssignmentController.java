@@ -1,7 +1,7 @@
 package org.daniel.equipmenttrackingsystem.controller;
 
-import org.daniel.equipmenttrackingsystem.dto.AssignEquipmentRequestDTO;
-import org.daniel.equipmenttrackingsystem.dto.AssignmentDTO;
+import org.daniel.equipmenttrackingsystem.dto.AssignEquipmentRequest;
+import org.daniel.equipmenttrackingsystem.dto.AssignmentResponse;
 import org.daniel.equipmenttrackingsystem.service.AssignmentService;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -18,13 +18,13 @@ public class AssignmentController {
     }
 
     @PostMapping
-    public ResponseEntity<AssignmentDTO> assignEquipment(@RequestBody AssignEquipmentRequestDTO requestDTO){
+    public ResponseEntity<AssignmentResponse> assignEquipment(@RequestBody AssignEquipmentRequest requestDTO){
         return ResponseEntity.ok(assignmentService.assignEquipment(
-                requestDTO.getEmployeeId(), requestDTO.getEquipmentId()));
+                requestDTO.employeeId(), requestDTO.equipmentId()));
     }
 
     @PostMapping("/{id}/return")
-    public ResponseEntity<AssignmentDTO> returnEquipment(@PathVariable UUID id){
+    public ResponseEntity<AssignmentResponse> returnEquipment(@PathVariable UUID id){
         return ResponseEntity.ok(assignmentService.returnEquipment(id));
     }
 }

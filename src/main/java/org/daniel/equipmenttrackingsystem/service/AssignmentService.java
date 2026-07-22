@@ -2,7 +2,7 @@ package org.daniel.equipmenttrackingsystem.service;
 
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
-import org.daniel.equipmenttrackingsystem.dto.AssignmentDTO;
+import org.daniel.equipmenttrackingsystem.dto.AssignmentResponse;
 import org.daniel.equipmenttrackingsystem.enums.EquipmentStatus;
 import org.daniel.equipmenttrackingsystem.model.Assignment;
 import org.daniel.equipmenttrackingsystem.model.Employee;
@@ -24,30 +24,40 @@ public class AssignmentService {
     private final EquipmentRepository equipmentRepository;
 
 
-    private AssignmentDTO mapToDto(Assignment assignment){
+    private AssignmentResponse mapToDto(Assignment assignment){
+        if(assignment == null){
+            return null;
+        }
 
-        AssignmentDTO assignmentDTO = new AssignmentDTO();
-        assignmentDTO.setId(assignment.getId());
+        UUID employeeId = null;
+        String employeeName = null;
 
         if(assignment.getEmployee() != null){
-            assignmentDTO.setEmployeeId(assignment.getEmployee().getId());
-            assignmentDTO.setEmployeeName(assignment.getEmployee().getFirstName()
-                    + " " + assignment.getEmployee().getLastName());
+            employeeId = assignment.getEmployee().getId();
+            employeeName = assignment.getEmployee().getFirstName() + " " + assignment.getEmployee().getLastName();
         }
+
+        UUID equipmentId = null;
+        String equipmentName = null;
 
         if(assignment.getEquipment() != null){
-            assignmentDTO.setEquipmentId(assignment.getEquipment().getId());
-            assignmentDTO.setEquipmentName(assignment.getEquipment().getEquipmentName());
+            equipmentId = assignment.getEquipment().getId();
+            equipmentName = assignment.getEquipment().getEquipmentName();
         }
 
-        assignmentDTO.setAssignedAt(assignment.getAssignedAt());
-        assignmentDTO.setReturnedAt(assignment.getReturnedAt());
-
-        return assignmentDTO;
+        return new AssignmentResponse(
+                assignment.getId(),
+                employeeId,
+                employeeName,
+                equipmentId,
+                employeeName,
+                assignment.getAssignedAt(),
+                assignment.getAssignedAt()
+        );
     }
 
     @Transactional
-    public AssignmentDTO assignEquipment(UUID employeeId, UUID equipmentId){
+    public AssignmentResponse assignEquipment(UUID employeeId, UUID equipmentId){
         Employee employee = employeeRepository.findById(employeeId)
                 .orElseThrow(() -> new RuntimeException("Employee not found"));
 
@@ -79,7 +89,7 @@ public class AssignmentService {
     }
 
     @Transactional
-    public AssignmentDTO returnEquipment(UUID assignmentId){
+    public AssignmentResponse returnEquipment(UUID assignmentId){
         Assignment assignment = assignmentRepository.findById(assignmentId)
                 .orElseThrow(() -> new RuntimeException("Assignment not found"));
 

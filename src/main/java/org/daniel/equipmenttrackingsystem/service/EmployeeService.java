@@ -1,12 +1,14 @@
 package org.daniel.equipmenttrackingsystem.service;
 
-import org.daniel.equipmenttrackingsystem.dto.EmployeeDTO;
+import org.daniel.equipmenttrackingsystem.dto.EmployeeRequest;
+import org.daniel.equipmenttrackingsystem.dto.EmployeeResponse;
 import org.daniel.equipmenttrackingsystem.model.Employee;
 import org.daniel.equipmenttrackingsystem.repository.AssignmentRepository;
 import org.daniel.equipmenttrackingsystem.repository.EmployeeRepository;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.util.Optional;
 import java.util.UUID;
@@ -18,54 +20,58 @@ public class EmployeeService {
     private final AssignmentRepository assignmentRepository;
 
     public EmployeeService(EmployeeRepository employeeRepository,
-                           AssignmentRepository assignmentRepository){
+                           AssignmentRepository assignmentRepository) {
         this.employeeRepository = employeeRepository;
         this.assignmentRepository = assignmentRepository;
     }
 
-    public EmployeeDTO createEmployee(EmployeeDTO employeeDTO){
-        if(employeeRepository.existsByEmail(employeeDTO.getEmail())){
+    @Transactional
+    public EmployeeResponse createEmployee(EmployeeRequest employeeRequest) {
+        if (employeeRepository.existsByEmail(employeeRequest.email())) {
             throw new IllegalArgumentException("User already exists");
         }
 
-        Employee employee = employeeDTO.toEntity();
+        Employee employee = employeeRequest.toEntity();
         Employee savedEmployee = employeeRepository.save(employee);
 
-        return EmployeeDTO.fromEntity(savedEmployee);
+        return EmployeeResponse.fromEntity(savedEmployee);
     }
 
-    public Optional<EmployeeDTO> getEmployeeById(UUID id){
-        return employeeRepository.findById(id).map(EmployeeDTO::fromEntity);
+    @Transactional(readOnly = true)
+    public Optional<EmployeeResponse> getEmployeeById(UUID id) {
+        return employeeRepository.findById(id).map(EmployeeResponse::fromEntity);
     }
 
-    public Page<EmployeeDTO> getAllEmployees(Pageable pageable){
-        return employeeRepository.findAll(pageable).map(EmployeeDTO::fromEntity);
+    @Transactional(readOnly = true)
+    public Page<EmployeeResponse> getAllEmployees(Pageable pageable) {
+        return employeeRepository.findAll(pageable).map(EmployeeResponse::fromEntity);
     }
 
-    public EmployeeDTO updateEmployee(UUID id, EmployeeDTO employeeDTO){
+    @Transactional
+    public EmployeeResponse updateEmployee(UUID id, EmployeeRequest employeeRequest) {
         Employee employee = employeeRepository.findById(id)
                 .orElseThrow(() -> new IllegalArgumentException("Employee not found"));
 
-        employee.setFirstName(employeeDTO.getFirstName());
-        employee.setLastName(employeeDTO.getLastName());
-        employee.setEmail(employeeDTO.getEmail());
-        employee.setHireDate(employeeDTO.getHireDate());
-        employee.setDepartment(employeeDTO.getDepartment());
-        employee.setPosition(employeeDTO.getPosition());
-        employee.setActive(true);
+        employee.setFirstName(employeeRequest.firstName());
+        employee.setLastName(employeeRequest.lastName());
+        employee.setEmail(employeeRequest.email());
+        employee.setHireDate(employeeRequest.hireDate());
+        employee.setDepartment(employeeRequest.department());
+        employee.setPosition(employeeRequest.position());
+        employee.setActive(employeeRequest.active());
 
         Employee updatedEmployee = employeeRepository.save(employee);
 
-        return EmployeeDTO.fromEntity(updatedEmployee);
-
+        return EmployeeResponse.fromEntity(updatedEmployee);
     }
 
-    public void deleteEmployee(UUID id){
+    @Transactional
+    public void deleteEmployee(UUID id) {
         employeeRepository.findById(id)
                 .orElseThrow(() -> new IllegalArgumentException("User not found"));
 
-        if(assignmentRepository.existsByEmployeeIdAndReturnedAtIsNull(id)){
-            throw new IllegalStateException("Cannot delete employee");
+        if (assignmentRepository.existsByEmployeeIdAndReturnedAtIsNull(id)) {
+            throw new IllegalStateException("Cannot delete employee with active assignments");
         }
         employeeRepository.deleteById(id);
     }
