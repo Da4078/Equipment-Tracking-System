@@ -1,46 +1,49 @@
 package org.daniel.equipmenttrackingsystem.service;
 
 import org.daniel.equipmenttrackingsystem.dto.EquipmentDTO;
+import org.daniel.equipmenttrackingsystem.enums.EquipmentStatus;
 import org.daniel.equipmenttrackingsystem.model.Equipment;
+import org.daniel.equipmenttrackingsystem.repository.AssignmentRepository;
 import org.daniel.equipmenttrackingsystem.repository.EquipmentRepository;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
+import java.util.Optional;
 import java.util.UUID;
 
 @Service
 public class EquipmentService {
 
     private final EquipmentRepository equipmentRepository;
+    private final AssignmentRepository assignmentRepository;
 
-    public EquipmentService(EquipmentRepository equipmentRepository) {this.equipmentRepository = equipmentRepository;}
+    public EquipmentService(EquipmentRepository equipmentRepository,
+                            AssignmentRepository assignmentRepository) {
+        this.equipmentRepository = equipmentRepository;
+        this.assignmentRepository = assignmentRepository;
+    }
 
-    public Equipment createEquipment(EquipmentDTO equipmentDTO){
+    public EquipmentDTO createEquipment(EquipmentDTO equipmentDTO){
 
         if(equipmentRepository.existsBySerialNumber(equipmentDTO.getSerialNumber())){
             throw new IllegalArgumentException("Equipment with this serial number already exists");
         }
 
-        Equipment equipment = new Equipment();
-        equipment.setEquipmentName(equipmentDTO.getEquipmentName());
-        equipment.setType(equipmentDTO.getType());
-        equipment.setBrand(equipmentDTO.getBrand());
-        equipment.setModel(equipmentDTO.getModel());
-        equipment.setStatus(equipmentDTO.getStatus());
-        equipment.setSerialNumber(equipmentDTO.getSerialNumber());
+        Equipment equipment = equipmentDTO.toEntity();
+        Equipment savedEquipment = equipmentRepository.save(equipment);
 
-        return equipmentRepository.save(equipment);
+        return EquipmentDTO.fromEntity(savedEquipment);
     }
 
-    public Equipment getEquipmentById(UUID id){
-        return equipmentRepository.findById(id).orElseThrow();
+    public Optional<EquipmentDTO> getEquipmentById(UUID id){
+        return equipmentRepository.findById(id).map(EquipmentDTO::fromEntity);
     }
 
-    public List<Equipment> getAllEquipment() {
-       return equipmentRepository.findAll();
+    public List<EquipmentDTO> getAllEquipment() {
+       return equipmentRepository.findAll().stream().map(EquipmentDTO::fromEntity).toList();
     }
 
-    public Equipment updateEquipment(UUID id, EquipmentDTO equipmentDTO){
+    public EquipmentDTO updateEquipment(UUID id, EquipmentDTO equipmentDTO){
         Equipment equipment = equipmentRepository.findById(id)
                 .orElseThrow(() -> new IllegalArgumentException("Equipment not found"));
 
@@ -50,10 +53,22 @@ public class EquipmentService {
         equipment.setModel(equipmentDTO.getModel());
         equipment.setStatus(equipmentDTO.getStatus());
 
-        return equipmentRepository.save(equipment);
+        Equipment updatedEquipment = equipmentRepository.save(equipment);
+
+        return EquipmentDTO.fromEntity(updatedEquipment);
     }
 
     public void deleteEquipment(UUID id){
-        equipmentRepository.deleteById(id);
+        Equipment equipment = equipmentRepository.findById(id)
+                .orElseThrow(() -> new IllegalArgumentException("Equipment not found"));
+
+        boolean hasHistory = assignmentRepository.existsByEquipmentId(id);
+
+        if(hasHistory){
+            equipment.setStatus(EquipmentStatus.RETIRED);
+            equipmentRepository.save(equipment);
+        } else {
+            equipmentRepository.delete(equipment);
+        }
     }
 }

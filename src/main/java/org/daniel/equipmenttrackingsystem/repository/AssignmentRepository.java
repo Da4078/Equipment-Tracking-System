@@ -8,4 +8,7 @@ import java.util.UUID;
 
 @Repository
 public interface AssignmentRepository extends JpaRepository<Assignment, UUID> {
+    boolean existsByEmployeeIdAndReturnedAtIsNull(UUID id);
+
+    boolean existsByEquipmentId(UUID id);
 }
