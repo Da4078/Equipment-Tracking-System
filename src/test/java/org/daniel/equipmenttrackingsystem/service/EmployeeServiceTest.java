@@ -59,7 +59,7 @@ class EmployeeServiceTest {
 
         // Then
         assertNotNull(created);
-        assertNotNull(created.id()); // Database generates the UUID
+        assertNotNull(created.id());
         assertEquals("Name1", created.firstName());
         assertEquals("test@test.com", created.email());
         assertTrue(created.active());
@@ -67,7 +67,6 @@ class EmployeeServiceTest {
 
     @Test
     void should_not_create_employee_with_same_email(){
-
         //Given
         EmployeeRequest employeeRequest1 = new EmployeeRequest(
                 "John",
@@ -80,10 +79,11 @@ class EmployeeServiceTest {
         );
         employeeService.createEmployee(employeeRequest1);
 
+        //When
         EmployeeRequest employeeRequest2 = new EmployeeRequest(
                 "John",
                 "Doe",
-                "john@doe.com", // Duplicate email
+                "john@doe.com",
                 "other department",
                 "other position",
                 LocalDate.now(),
@@ -95,7 +95,8 @@ class EmployeeServiceTest {
                 ()-> employeeService.createEmployee(employeeRequest2)
         );
 
-        assertNotEquals("Employee with this email already exists", exception.getMessage());
+        //Then
+        assertEquals("Employee with this email already exists", exception.getMessage());
     }
 
     @Test
@@ -224,7 +225,6 @@ class EmployeeServiceTest {
 
     @Test
     void should_not_delete_employee_with_assigment(){
-
         //Given
         EmployeeRequest employee = new EmployeeRequest(
                 "John",

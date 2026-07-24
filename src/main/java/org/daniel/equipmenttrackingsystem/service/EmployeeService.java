@@ -28,7 +28,7 @@ public class EmployeeService {
     @Transactional
     public EmployeeResponse createEmployee(EmployeeRequest employeeRequest) {
         if (employeeRepository.existsByEmail(employeeRequest.email())) {
-            throw new IllegalArgumentException("User already exists");
+            throw new IllegalArgumentException("Employee with this email already exists");
         }
 
         Employee employee = employeeRequest.toEntity();
