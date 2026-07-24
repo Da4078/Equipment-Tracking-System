@@ -3,6 +3,8 @@ package org.daniel.equipmenttrackingsystem.service;
 import org.daniel.equipmenttrackingsystem.dto.EquipmentRequest;
 import org.daniel.equipmenttrackingsystem.dto.EquipmentResponse;
 import org.daniel.equipmenttrackingsystem.enums.EquipmentStatus;
+import org.daniel.equipmenttrackingsystem.exception.BusinessRuleException;
+import org.daniel.equipmenttrackingsystem.exception.ResourceNotFoundException;
 import org.daniel.equipmenttrackingsystem.model.Equipment;
 import org.daniel.equipmenttrackingsystem.repository.AssignmentRepository;
 import org.daniel.equipmenttrackingsystem.repository.EquipmentRepository;
@@ -28,7 +30,7 @@ public class EquipmentService {
     @Transactional
     public EquipmentResponse createEquipment(EquipmentRequest equipmentRequest) {
         if (equipmentRepository.existsBySerialNumber(equipmentRequest.serialNumber())) {
-            throw new IllegalArgumentException("Equipment with this serial number already exists");
+            throw new BusinessRuleException("Equipment with serial number '" + equipmentRequest.serialNumber() + "' already exists");
         }
 
         Equipment equipment = equipmentRequest.toEntity();
@@ -38,8 +40,10 @@ public class EquipmentService {
     }
 
     @Transactional(readOnly = true)
-    public Optional<EquipmentResponse> getEquipmentById(UUID id) {
-        return equipmentRepository.findById(id).map(EquipmentResponse::fromEntity);
+    public EquipmentResponse getEquipmentById(UUID id) {
+        return equipmentRepository.findById(id)
+                .map(EquipmentResponse::fromEntity)
+                .orElseThrow(() -> new ResourceNotFoundException("Equipment not found with ID: " + id));
     }
 
     @Transactional(readOnly = true)
@@ -52,7 +56,7 @@ public class EquipmentService {
     @Transactional
     public EquipmentResponse updateEquipment(UUID id, EquipmentRequest equipmentRequest) {
         Equipment equipment = equipmentRepository.findById(id)
-                .orElseThrow(() -> new IllegalArgumentException("Equipment not found"));
+                .orElseThrow(() -> new ResourceNotFoundException("Equipment not found with ID: " + id));
 
         equipment.setEquipmentName(equipmentRequest.equipmentName());
         equipment.setType(equipmentRequest.type());
@@ -67,7 +71,7 @@ public class EquipmentService {
     @Transactional
     public void deleteEquipment(UUID id) {
         Equipment equipment = equipmentRepository.findById(id)
-                .orElseThrow(() -> new IllegalArgumentException("Equipment not found"));
+                .orElseThrow(() -> new ResourceNotFoundException("Equipment not found with ID: " + id));
 
         boolean hasHistory = assignmentRepository.existsByEquipmentId(id);
 

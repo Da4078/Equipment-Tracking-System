@@ -32,9 +32,8 @@ public class EmployeeController {
 
     @GetMapping("/{id}")
     public ResponseEntity<EmployeeResponse> getEmployeeById(@PathVariable UUID id) {
-        return employeeService.getEmployeeById(id)
-                .map(ResponseEntity::ok)
-                .orElse(ResponseEntity.notFound().build());
+        EmployeeResponse employee = employeeService.getEmployeeById(id);
+        return ResponseEntity.ok(employee);
     }
 
     @GetMapping

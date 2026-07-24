@@ -6,6 +6,8 @@ import org.daniel.equipmenttrackingsystem.dto.EquipmentRequest;
 import org.daniel.equipmenttrackingsystem.dto.EquipmentResponse;
 import org.daniel.equipmenttrackingsystem.enums.EquipmentStatus;
 import org.daniel.equipmenttrackingsystem.enums.EquipmentType;
+import org.daniel.equipmenttrackingsystem.exception.BusinessRuleException;
+import org.daniel.equipmenttrackingsystem.exception.ResourceNotFoundException;
 import org.daniel.equipmenttrackingsystem.repository.EmployeeRepository;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -16,7 +18,6 @@ import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 
 import java.time.LocalDate;
-import java.util.Optional;
 
 import static org.junit.jupiter.api.Assertions.*;
 
@@ -34,7 +35,6 @@ class EmployeeServiceTest {
 
     @Autowired
     private AssignmentService assignmentService;
-
 
     @BeforeEach
     void setUp() {
@@ -66,8 +66,8 @@ class EmployeeServiceTest {
     }
 
     @Test
-    void should_not_create_employee_with_same_email(){
-        //Given
+    void should_not_create_employee_with_same_email() {
+        // Given
         EmployeeRequest employeeRequest1 = new EmployeeRequest(
                 "John",
                 "Doe",
@@ -79,7 +79,7 @@ class EmployeeServiceTest {
         );
         employeeService.createEmployee(employeeRequest1);
 
-        //When
+        // When
         EmployeeRequest employeeRequest2 = new EmployeeRequest(
                 "John",
                 "Doe",
@@ -90,13 +90,13 @@ class EmployeeServiceTest {
                 true
         );
 
-        IllegalArgumentException exception = assertThrows(
-                IllegalArgumentException.class,
-                ()-> employeeService.createEmployee(employeeRequest2)
+        BusinessRuleException exception = assertThrows(
+                BusinessRuleException.class,
+                () -> employeeService.createEmployee(employeeRequest2)
         );
 
-        //Then
-        assertEquals("Employee with this email already exists", exception.getMessage());
+        // Then
+        assertEquals("Employee with email 'john@doe.com' already exists", exception.getMessage());
     }
 
     @Test
@@ -114,17 +114,17 @@ class EmployeeServiceTest {
         EmployeeResponse saved = employeeService.createEmployee(employeeRequest);
 
         // When
-        Optional<EmployeeResponse> found = employeeService.getEmployeeById(saved.id());
+        EmployeeResponse found = employeeService.getEmployeeById(saved.id());
 
         // Then
-        assertTrue(found.isPresent());
-        assertEquals(saved.id(), found.get().id());
-        assertEquals("John", found.get().firstName());
+        assertNotNull(found);
+        assertEquals(saved.id(), found.id());
+        assertEquals("John", found.firstName());
     }
 
     @Test
-    void should_get_all_employees(){
-        //Given
+    void should_get_all_employees() {
+        // Given
         EmployeeRequest employee1 = new EmployeeRequest(
                 "Name1",
                 "Surname1",
@@ -149,10 +149,10 @@ class EmployeeServiceTest {
 
         Pageable pageable = PageRequest.of(0, 10);
 
-        //When
+        // When
         Page<EmployeeResponse> response = employeeService.getAllEmployees(pageable);
 
-        //Then
+        // Then
         assertNotNull(response);
         assertEquals(2, response.getTotalElements());
         assertEquals(1, response.getTotalPages());
@@ -163,8 +163,8 @@ class EmployeeServiceTest {
     }
 
     @Test
-    void should_update_employee(){
-        //Given
+    void should_update_employee() {
+        // Given
         EmployeeRequest employee1 = new EmployeeRequest(
                 "Name1",
                 "Surname1",
@@ -186,10 +186,10 @@ class EmployeeServiceTest {
 
         EmployeeResponse savedEmployee = employeeService.createEmployee(employee1);
 
-        //When
+        // When
         EmployeeResponse response = employeeService.updateEmployee(savedEmployee.id(), employee2);
 
-        //Then
+        // Then
         assertNotNull(response);
         assertNotNull(response.id());
         assertEquals("John", response.firstName());
@@ -201,8 +201,8 @@ class EmployeeServiceTest {
     }
 
     @Test
-    void should_delete_employee(){
-        //Given
+    void should_delete_employee() {
+        // Given
         EmployeeRequest employee1 = new EmployeeRequest(
                 "John",
                 "Doe",
@@ -215,17 +215,19 @@ class EmployeeServiceTest {
 
         EmployeeResponse savedEmployee = employeeService.createEmployee(employee1);
 
-        //When
+        // When
         employeeService.deleteEmployee(savedEmployee.id());
 
-        //Then
-        Optional<EmployeeResponse> employee = employeeService.getEmployeeById(savedEmployee.id());
-        assertTrue(employee.isEmpty());
+        // Then (Fetching deleted employee must throw ResourceNotFoundException)
+        assertThrows(
+                ResourceNotFoundException.class,
+                () -> employeeService.getEmployeeById(savedEmployee.id())
+        );
     }
 
     @Test
-    void should_not_delete_employee_with_assigment(){
-        //Given
+    void should_not_delete_employee_with_assignment() {
+        // Given
         EmployeeRequest employee = new EmployeeRequest(
                 "John",
                 "Doe",
@@ -238,7 +240,7 @@ class EmployeeServiceTest {
         EmployeeResponse savedEmployee = employeeService.createEmployee(employee);
 
         EquipmentRequest equipment = new EquipmentRequest(
-            "Laptop Lenovo 4k",
+                "Laptop Lenovo 4k",
                 EquipmentType.LAPTOP,
                 "LENOVO",
                 "LOQ",
@@ -250,16 +252,17 @@ class EmployeeServiceTest {
 
         assignmentService.assignEquipment(savedEmployee.id(), savedEquipment.id());
 
-        //WHEN
-        IllegalStateException exception = assertThrows(
-                IllegalStateException.class,
+        // When
+        BusinessRuleException exception = assertThrows(
+                BusinessRuleException.class,
                 () -> employeeService.deleteEmployee(savedEmployee.id())
         );
 
-        assertEquals("Cannot delete employee with active assignments", exception.getMessage());
+        assertEquals("Cannot delete employee with active equipment assignments", exception.getMessage());
 
-        Optional<EmployeeResponse> employeeInDb = employeeService.getEmployeeById(savedEmployee.id());
-        assertTrue(employeeInDb.isPresent());
-
+        // Then (Employee must still exist)
+        EmployeeResponse employeeInDb = employeeService.getEmployeeById(savedEmployee.id());
+        assertNotNull(employeeInDb);
+        assertEquals(savedEmployee.id(), employeeInDb.id());
     }
 }

@@ -63,11 +63,11 @@ public class AssignmentServiceTest {
                 employeeResponse.id(),
                 equipmentResponse.id());
 
-        Optional<EquipmentResponse> assignedEquipment = equipmentService.getEquipmentById(equipmentResponse.id());
+        EquipmentResponse assignedEquipment = equipmentService.getEquipmentById(equipmentResponse.id());
 
         //Then
-        assertTrue(assignedEquipment.isPresent());
-        assertEquals(EquipmentStatus.ASSIGNED, assignedEquipment.get().status());
+        assertNotNull(assignedEquipment);
+        assertEquals(EquipmentStatus.ASSIGNED, assignedEquipment.status());
     }
 
 }

@@ -28,9 +28,8 @@ public class EquipmentController {
 
     @GetMapping("/{id}")
     public ResponseEntity<EquipmentResponse> getEquipmentById(@PathVariable UUID id) {
-        return equipmentService.getEquipmentById(id)
-                .map(ResponseEntity::ok)
-                .orElse(ResponseEntity.notFound().build());
+        EquipmentResponse equipment = equipmentService.getEquipmentById(id);
+        return ResponseEntity.ok(equipment);
     }
 
     @GetMapping
