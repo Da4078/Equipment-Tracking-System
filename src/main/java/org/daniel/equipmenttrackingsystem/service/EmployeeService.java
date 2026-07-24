@@ -2,6 +2,8 @@ package org.daniel.equipmenttrackingsystem.service;
 
 import org.daniel.equipmenttrackingsystem.dto.EmployeeRequest;
 import org.daniel.equipmenttrackingsystem.dto.EmployeeResponse;
+import org.daniel.equipmenttrackingsystem.exception.BusinessRuleException;
+import org.daniel.equipmenttrackingsystem.exception.ResourceNotFoundException;
 import org.daniel.equipmenttrackingsystem.model.Employee;
 import org.daniel.equipmenttrackingsystem.repository.AssignmentRepository;
 import org.daniel.equipmenttrackingsystem.repository.EmployeeRepository;
@@ -10,7 +12,7 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.util.Optional;
+
 import java.util.UUID;
 
 @Service
@@ -28,7 +30,7 @@ public class EmployeeService {
     @Transactional
     public EmployeeResponse createEmployee(EmployeeRequest employeeRequest) {
         if (employeeRepository.existsByEmail(employeeRequest.email())) {
-            throw new IllegalArgumentException("Employee with this email already exists");
+            throw new BusinessRuleException("Employee with email '" + employeeRequest.email() + "' already exists");
         }
 
         Employee employee = employeeRequest.toEntity();
@@ -38,8 +40,10 @@ public class EmployeeService {
     }
 
     @Transactional(readOnly = true)
-    public Optional<EmployeeResponse> getEmployeeById(UUID id) {
-        return employeeRepository.findById(id).map(EmployeeResponse::fromEntity);
+    public EmployeeResponse getEmployeeById(UUID id) {
+        return employeeRepository.findById(id)
+                .map(EmployeeResponse::fromEntity)
+                .orElseThrow(() -> new ResourceNotFoundException("Employee not found with ID: " + id));
     }
 
     @Transactional(readOnly = true)
@@ -50,7 +54,7 @@ public class EmployeeService {
     @Transactional
     public EmployeeResponse updateEmployee(UUID id, EmployeeRequest employeeRequest) {
         Employee employee = employeeRepository.findById(id)
-                .orElseThrow(() -> new IllegalArgumentException("Employee not found"));
+                .orElseThrow(() -> new ResourceNotFoundException("Employee not found with ID: " + id));
 
         employee.setFirstName(employeeRequest.firstName());
         employee.setLastName(employeeRequest.lastName());
@@ -68,10 +72,10 @@ public class EmployeeService {
     @Transactional
     public void deleteEmployee(UUID id) {
         employeeRepository.findById(id)
-                .orElseThrow(() -> new IllegalArgumentException("User not found"));
+                .orElseThrow(() -> new ResourceNotFoundException("Employee not found with ID: " + id));
 
         if (assignmentRepository.existsByEmployeeIdAndReturnedAtIsNull(id)) {
-            throw new IllegalStateException("Cannot delete employee with active assignments");
+            throw new BusinessRuleException("Cannot delete employee with active equipment assignments");
         }
         employeeRepository.deleteById(id);
     }

@@ -3,7 +3,8 @@ package org.daniel.equipmenttrackingsystem.service;
 import org.daniel.equipmenttrackingsystem.dto.*;
 import org.daniel.equipmenttrackingsystem.enums.EquipmentStatus;
 import org.daniel.equipmenttrackingsystem.enums.EquipmentType;
-import org.daniel.equipmenttrackingsystem.repository.AssignmentRepository;
+import org.daniel.equipmenttrackingsystem.exception.BusinessRuleException;
+import org.daniel.equipmenttrackingsystem.exception.ResourceNotFoundException;
 import org.daniel.equipmenttrackingsystem.repository.EquipmentRepository;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -12,7 +13,6 @@ import org.springframework.boot.test.context.SpringBootTest;
 
 import java.time.LocalDate;
 import java.util.List;
-import java.util.Optional;
 import java.util.UUID;
 
 import static org.junit.jupiter.api.Assertions.*;
@@ -28,17 +28,18 @@ public class EquipmentServiceTest {
 
     @Autowired
     private EmployeeService employeeService;
+
     @Autowired
     private AssignmentService assignmentService;
 
     @BeforeEach
-    void setUp(){
+    void setUp() {
         equipmentRepository.deleteAll();
     }
 
     @Test
-    void should_create_equipment(){
-        //Given
+    void should_create_equipment() {
+        // Given
         EquipmentRequest equipmentRequest = new EquipmentRequest(
                 "Iphone 17 PRO MAX",
                 EquipmentType.PHONE,
@@ -48,18 +49,18 @@ public class EquipmentServiceTest {
                 "SN-01-0000094"
         );
 
-        //Then
+        // When
         EquipmentResponse created = equipmentService.createEquipment(equipmentRequest);
 
-        //When
+        // Then
         assertNotNull(created);
         assertNotNull(created.id());
         assertEquals("SN-01-0000094", created.serialNumber());
     }
 
     @Test
-    void should_not_create_equipment_with_the_same_serial_number(){
-        //Given
+    void should_not_create_equipment_with_the_same_serial_number() {
+        // Given
         EquipmentRequest equipment1 = new EquipmentRequest(
                 "Iphone 17 PRO MAX",
                 EquipmentType.PHONE,
@@ -70,7 +71,7 @@ public class EquipmentServiceTest {
         );
         equipmentService.createEquipment(equipment1);
 
-        //When
+        // When
         EquipmentRequest equipment2 = new EquipmentRequest(
                 "Iphone 17 PRO MAX",
                 EquipmentType.PHONE,
@@ -80,9 +81,9 @@ public class EquipmentServiceTest {
                 "SN-01-0000094"
         );
 
-        //Then
-        IllegalArgumentException exception = assertThrows(
-                IllegalArgumentException.class,
+        // Then
+        BusinessRuleException exception = assertThrows(
+                BusinessRuleException.class,
                 () -> equipmentService.createEquipment(equipment2)
         );
 
@@ -90,8 +91,8 @@ public class EquipmentServiceTest {
     }
 
     @Test
-    void should_get_equipment_by_id(){
-        //Given
+    void should_get_equipment_by_id() {
+        // Given
         EquipmentRequest equipmentRequest = new EquipmentRequest(
                 "Iphone 17 PRO MAX",
                 EquipmentType.PHONE,
@@ -103,18 +104,18 @@ public class EquipmentServiceTest {
 
         EquipmentResponse created = equipmentService.createEquipment(equipmentRequest);
 
-        //When
-        Optional<EquipmentResponse> found = equipmentService.getEquipmentById(created.id());
+        // When
+        EquipmentResponse found = equipmentService.getEquipmentById(created.id());
 
-        //Then
-        assertTrue(found.isPresent());
-        assertEquals(created.id(), found.get().id());
-        assertEquals("SN-01-0000094", found.get().serialNumber());
+        // Then
+        assertNotNull(found);
+        assertEquals(created.id(), found.id());
+        assertEquals("SN-01-0000094", found.serialNumber());
     }
 
     @Test
-    void should_throw_exception_when_updating_non_existent_id(){
-        //Given
+    void should_throw_exception_when_updating_non_existent_id() {
+        // Given
         UUID nonExistentId = UUID.randomUUID();
         EquipmentRequest updateRequest = new EquipmentRequest(
                 "iPhone 17 PRO MAX",
@@ -125,19 +126,18 @@ public class EquipmentServiceTest {
                 "SN-100"
         );
 
-        //When
-        IllegalArgumentException exception = assertThrows(
-                IllegalArgumentException.class,
+        // Then
+        ResourceNotFoundException exception = assertThrows(
+                ResourceNotFoundException.class,
                 () -> equipmentService.updateEquipment(nonExistentId, updateRequest)
         );
 
-        //Then
-        assertEquals("Equipment not found", exception.getMessage());
+        assertEquals("Equipment not found with ID: " + nonExistentId, exception.getMessage());
     }
 
     @Test
-    void should_get_all_equipment(){
-        //Given
+    void should_get_all_equipment() {
+        // Given
         EquipmentRequest equipment1 = new EquipmentRequest(
                 "Iphone 17 PRO MAX",
                 EquipmentType.PHONE,
@@ -155,20 +155,20 @@ public class EquipmentServiceTest {
                 "SN-01-0000097"
         );
 
-        //When
+        // When
         equipmentService.createEquipment(equipment1);
         equipmentService.createEquipment(equipment2);
 
         List<EquipmentResponse> response = equipmentService.getAllEquipment();
 
-        //Then
+        // Then
         assertNotNull(response);
         assertEquals(2, response.size());
     }
 
     @Test
-    void should_update_equipment(){
-        //Given
+    void should_update_equipment() {
+        // Given
         EquipmentRequest equipment = new EquipmentRequest(
                 "Iphone 17 PRO MAX",
                 EquipmentType.PHONE,
@@ -188,18 +188,18 @@ public class EquipmentServiceTest {
                 "SN-01-0000099"
         );
 
-        //When
+        // When
         EquipmentResponse updated = equipmentService.updateEquipment(saved.id(), equipment2);
 
-        //Then
+        // Then
         assertNotNull(updated);
         assertNotNull(updated.id());
         assertEquals("Iphone 14 PRO MAX", updated.equipmentName());
     }
 
     @Test
-    void should_delete_equipment_by_id(){
-        //Given
+    void should_delete_equipment_by_id() {
+        // Given
         EquipmentRequest equipmentRequest = new EquipmentRequest(
                 "iPhone 17 PRO MAX",
                 EquipmentType.PHONE,
@@ -211,17 +211,19 @@ public class EquipmentServiceTest {
 
         EquipmentResponse response = equipmentService.createEquipment(equipmentRequest);
 
-        //When
+        // When
         equipmentService.deleteEquipment(response.id());
 
-        //Then
-        Optional<EquipmentResponse> equipment = equipmentService.getEquipmentById(response.id());
-        assertTrue(equipment.isEmpty());
+        // Then (Fetching deleted equipment throws ResourceNotFoundException)
+        assertThrows(
+                ResourceNotFoundException.class,
+                () -> equipmentService.getEquipmentById(response.id())
+        );
     }
 
     @Test
-    void should_retire_equipment_by_id(){
-        //Given
+    void should_retire_equipment_by_id() {
+        // Given
         EquipmentRequest equipmentRequest = new EquipmentRequest(
                 "iPhone 17 PRO MAX",
                 EquipmentType.PHONE,
@@ -244,12 +246,12 @@ public class EquipmentServiceTest {
         EmployeeResponse employeeResponse = employeeService.createEmployee(employeeRequest);
         assignmentService.assignEquipment(employeeResponse.id(), equipmentResponse.id());
 
-        //When
+        // When
         equipmentService.deleteEquipment(equipmentResponse.id());
-        Optional<EquipmentResponse> softDeleted = equipmentService.getEquipmentById(equipmentResponse.id());
+        EquipmentResponse softDeleted = equipmentService.getEquipmentById(equipmentResponse.id());
 
-        //Then
-        assertTrue(softDeleted.isPresent());
-        assertEquals(EquipmentStatus.RETIRED, softDeleted.get().status());
+        // Then
+        assertNotNull(softDeleted);
+        assertEquals(EquipmentStatus.RETIRED, softDeleted.status());
     }
 }

@@ -2,6 +2,8 @@ package org.daniel.equipmenttrackingsystem.service;
 
 import org.daniel.equipmenttrackingsystem.dto.UserRequest;
 import org.daniel.equipmenttrackingsystem.dto.UserResponse;
+import org.daniel.equipmenttrackingsystem.exception.BusinessRuleException;
+import org.daniel.equipmenttrackingsystem.exception.ResourceNotFoundException;
 import org.daniel.equipmenttrackingsystem.model.User;
 import org.daniel.equipmenttrackingsystem.repository.UserRepository;
 import org.springframework.stereotype.Service;
@@ -23,7 +25,7 @@ public class UserService {
     @Transactional
     public UserResponse createUser(UserRequest userRequest) {
         if (userRepository.existsByEmail(userRequest.email())) {
-            throw new IllegalArgumentException("User already exists");
+            throw new BusinessRuleException("User with email '" + userRequest.email() + "' already exists");
         }
 
         User user = userRequest.toEntity();
@@ -46,7 +48,7 @@ public class UserService {
     @Transactional
     public UserResponse updateUser(UUID id, UserRequest userRequest) {
         User user = userRepository.findById(id)
-                .orElseThrow(() -> new IllegalArgumentException("User not found"));
+                .orElseThrow(() -> new ResourceNotFoundException("User not found with ID: " + id));
 
         user.setFirstName(userRequest.firstName());
         user.setLastName(userRequest.lastName());
@@ -60,7 +62,7 @@ public class UserService {
     @Transactional
     public void deleteUser(UUID id) {
         User user = userRepository.findById(id)
-                .orElseThrow(() -> new IllegalArgumentException("User not found"));
+                .orElseThrow(() -> new ResourceNotFoundException("User not found with ID: " + id));
         userRepository.deleteById(id);
     }
 }
