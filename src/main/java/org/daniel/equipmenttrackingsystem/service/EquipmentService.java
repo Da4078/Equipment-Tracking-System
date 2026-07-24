@@ -59,10 +59,6 @@ public class EquipmentService {
         equipment.setBrand(equipmentRequest.brand());
         equipment.setModel(equipmentRequest.model());
 
-        if (equipmentRequest.status() != null) {
-            equipment.setStatus(equipmentRequest.status());
-        }
-
         Equipment updatedEquipment = equipmentRepository.save(equipment);
 
         return EquipmentResponse.fromEntity(updatedEquipment);
