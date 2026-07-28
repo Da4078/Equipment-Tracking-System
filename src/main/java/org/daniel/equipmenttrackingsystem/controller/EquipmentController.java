@@ -1,5 +1,6 @@
 package org.daniel.equipmenttrackingsystem.controller;
 
+import jakarta.validation.Valid;
 import org.daniel.equipmenttrackingsystem.dto.EquipmentRequest;
 import org.daniel.equipmenttrackingsystem.dto.EquipmentResponse;
 import org.daniel.equipmenttrackingsystem.service.EquipmentService;
@@ -21,7 +22,7 @@ public class EquipmentController {
     }
 
     @PostMapping
-    public ResponseEntity<EquipmentResponse> createEquipment(@RequestBody EquipmentRequest equipmentRequest) {
+    public ResponseEntity<EquipmentResponse> createEquipment(@Valid @RequestBody EquipmentRequest equipmentRequest) {
         return ResponseEntity.status(HttpStatus.CREATED)
                 .body(equipmentService.createEquipment(equipmentRequest));
     }
@@ -39,7 +40,7 @@ public class EquipmentController {
 
     @PutMapping("/{id}")
     public ResponseEntity<EquipmentResponse> updateEquipment(@PathVariable UUID id,
-                                                             @RequestBody EquipmentRequest equipmentRequest) {
+                                                             @Valid @RequestBody EquipmentRequest equipmentRequest) {
         return ResponseEntity.ok(equipmentService.updateEquipment(id, equipmentRequest));
     }
 

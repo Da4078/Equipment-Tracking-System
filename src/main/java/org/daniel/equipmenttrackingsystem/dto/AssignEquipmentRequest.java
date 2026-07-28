@@ -1,9 +1,15 @@
 package org.daniel.equipmenttrackingsystem.dto;
 
+import jakarta.validation.constraints.NotNull;
+
 import java.util.UUID;
 
 public record AssignEquipmentRequest(
-         UUID employeeId,
-         UUID equipmentId) {
+
+        @NotNull
+        UUID employeeId,
+
+        @NotNull
+        UUID equipmentId) {
 
 }

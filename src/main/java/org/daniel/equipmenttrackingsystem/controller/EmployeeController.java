@@ -1,5 +1,6 @@
 package org.daniel.equipmenttrackingsystem.controller;
 
+import jakarta.validation.Valid;
 import org.daniel.equipmenttrackingsystem.dto.EmployeeRequest;
 import org.daniel.equipmenttrackingsystem.dto.EmployeeResponse;
 import org.daniel.equipmenttrackingsystem.service.EmployeeService;
@@ -25,7 +26,7 @@ public class EmployeeController {
     }
 
     @PostMapping
-    public ResponseEntity<EmployeeResponse> createEmployee(@RequestBody EmployeeRequest employeeRequest) {
+    public ResponseEntity<EmployeeResponse> createEmployee(@Valid @RequestBody EmployeeRequest employeeRequest) {
         return ResponseEntity.status(HttpStatus.CREATED)
                 .body(employeeService.createEmployee(employeeRequest));
     }
@@ -45,7 +46,7 @@ public class EmployeeController {
 
     @PutMapping("/{id}")
     public ResponseEntity<EmployeeResponse> updateEmployee(@PathVariable UUID id,
-                                                           @RequestBody EmployeeRequest employeeRequest) {
+                                                          @Valid @RequestBody EmployeeRequest employeeRequest) {
         return ResponseEntity.ok(employeeService.updateEmployee(id, employeeRequest));
     }
 

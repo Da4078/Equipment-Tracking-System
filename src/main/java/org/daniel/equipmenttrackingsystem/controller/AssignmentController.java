@@ -1,5 +1,6 @@
 package org.daniel.equipmenttrackingsystem.controller;
 
+import jakarta.validation.Valid;
 import org.daniel.equipmenttrackingsystem.dto.AssignEquipmentRequest;
 import org.daniel.equipmenttrackingsystem.dto.AssignmentResponse;
 import org.daniel.equipmenttrackingsystem.service.AssignmentService;
@@ -18,7 +19,7 @@ public class AssignmentController {
     }
 
     @PostMapping
-    public ResponseEntity<AssignmentResponse> assignEquipment(@RequestBody AssignEquipmentRequest requestDTO){
+    public ResponseEntity<AssignmentResponse> assignEquipment(@Valid @RequestBody AssignEquipmentRequest requestDTO){
         return ResponseEntity.ok(assignmentService.assignEquipment(
                 requestDTO.employeeId(), requestDTO.equipmentId()));
     }
