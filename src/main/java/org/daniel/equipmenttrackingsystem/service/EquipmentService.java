@@ -2,12 +2,16 @@ package org.daniel.equipmenttrackingsystem.service;
 
 import org.daniel.equipmenttrackingsystem.dto.EquipmentRequest;
 import org.daniel.equipmenttrackingsystem.dto.EquipmentResponse;
+import org.daniel.equipmenttrackingsystem.enums.EquipmentFilter;
 import org.daniel.equipmenttrackingsystem.enums.EquipmentStatus;
 import org.daniel.equipmenttrackingsystem.exception.BusinessRuleException;
 import org.daniel.equipmenttrackingsystem.exception.ResourceNotFoundException;
 import org.daniel.equipmenttrackingsystem.model.Equipment;
 import org.daniel.equipmenttrackingsystem.repository.AssignmentRepository;
 import org.daniel.equipmenttrackingsystem.repository.EquipmentRepository;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -46,10 +50,13 @@ public class EquipmentService {
     }
 
     @Transactional(readOnly = true)
-    public List<EquipmentResponse> getAllEquipment() {
-        return equipmentRepository.findAll().stream()
-                .map(EquipmentResponse::fromEntity)
-                .toList();
+    public Page<EquipmentResponse> getAllEquipment(EquipmentFilter equipmentFilter, Pageable pageable) {
+        Specification<Equipment> spec = (equipmentFilter != null)
+                ? equipmentFilter.toSpecification()
+                : Specification.allOf();
+
+        return equipmentRepository.findAll(spec, pageable)
+                .map(EquipmentResponse::fromEntity);
     }
 
     @Transactional
@@ -80,5 +87,26 @@ public class EquipmentService {
         } else {
             equipmentRepository.delete(equipment);
         }
+    }
+
+    @Transactional
+    public List<EquipmentResponse> getAvailableEquipment(){
+        Specification<Equipment> spec = EquipmentSpecifications.isAvailable();
+        return equipmentRepository.findAll(spec).stream()
+                .map(EquipmentResponse::fromEntity).toList();
+    }
+
+    @Transactional
+    public List<EquipmentResponse> getOutstandingEquipment(){
+        Specification<Equipment> spec = EquipmentSpecifications.isOutstanding();
+        return equipmentRepository.findAll(spec).stream()
+                .map(EquipmentResponse::fromEntity).toList();
+    }
+
+    @Transactional
+    public List<EquipmentResponse> getEquipmentHeldByEmployee(UUID employeeId){
+        Specification<Equipment> spec = EquipmentSpecifications.isHeldByEmployee(employeeId);
+        return equipmentRepository.findAll(spec).stream()
+                .map(EquipmentResponse::fromEntity).toList();
     }
 }

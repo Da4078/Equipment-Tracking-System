@@ -61,7 +61,7 @@ public class UserService {
 
     @Transactional
     public void deleteUser(UUID id) {
-        User user = userRepository.findById(id)
+        userRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("User not found with ID: " + id));
         userRepository.deleteById(id);
     }

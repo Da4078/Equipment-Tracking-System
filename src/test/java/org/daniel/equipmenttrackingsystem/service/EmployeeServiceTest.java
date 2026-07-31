@@ -16,12 +16,14 @@ import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDate;
 
 import static org.junit.jupiter.api.Assertions.*;
 
 @SpringBootTest
+@Transactional
 class EmployeeServiceTest {
 
     @Autowired
@@ -227,7 +229,7 @@ class EmployeeServiceTest {
 
     @Test
     void should_not_delete_employee_with_assignment() {
-        // Given
+        //Given
         EmployeeRequest employee = new EmployeeRequest(
                 "John",
                 "Doe",
@@ -252,7 +254,7 @@ class EmployeeServiceTest {
 
         assignmentService.assignEquipment(savedEmployee.id(), savedEquipment.id());
 
-        // When
+        //When
         BusinessRuleException exception = assertThrows(
                 BusinessRuleException.class,
                 () -> employeeService.deleteEmployee(savedEmployee.id())
@@ -260,7 +262,7 @@ class EmployeeServiceTest {
 
         assertEquals("Cannot delete employee with active equipment assignments", exception.getMessage());
 
-        // Then (Employee must still exist)
+        //Then
         EmployeeResponse employeeInDb = employeeService.getEmployeeById(savedEmployee.id());
         assertNotNull(employeeInDb);
         assertEquals(savedEmployee.id(), employeeInDb.id());

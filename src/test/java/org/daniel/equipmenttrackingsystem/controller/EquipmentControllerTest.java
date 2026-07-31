@@ -131,17 +131,19 @@ public class EquipmentControllerTest {
     }
 
     @Test
-    @DisplayName("GET /api/equipment - Should return list containing created equipment")
+    @DisplayName("GET /api/equipment - Should return paginated list containing created equipment")
     void should_return_list_of_equipment() throws Exception {
         createTestEquipment(
                 "MacBook Pro 16", EquipmentType.LAPTOP, "Apple", "M3 Max", EquipmentStatus.AVAILABLE, "SN-001");
         createTestEquipment(
                 "Dell UltraSharp 27", EquipmentType.MONITOR, "Dell", "U2723QE", EquipmentStatus.AVAILABLE, "SN-002");
 
-        mockMvc.perform(get("/api/equipment"))
+        mockMvc.perform(get("/api/equipment")
+                        .param("page", "0")
+                        .param("size", "10"))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$", hasSize(greaterThanOrEqualTo(2))))
-                .andExpect(jsonPath("$[*].serialNumber", hasItems("SN-001", "SN-002")));
+                .andExpect(jsonPath("$.content", hasSize(greaterThanOrEqualTo(2))))
+                .andExpect(jsonPath("$.content[*].serialNumber", hasItems("SN-001", "SN-002")));
     }
 
     @Test
@@ -168,7 +170,7 @@ public class EquipmentControllerTest {
                         .content(objectMapper.writeValueAsString(updateRequest)))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.id").value(createdEquipment.id().toString()))
-                .andExpect(jsonPath("$.equipmentName").value("MacBook Pro 16 (Assigned)"));
+                .andExpect(jsonPath("$.equipmentName").value("MacBook Pro 16 (Updated)"));
     }
 
     @Test
@@ -188,4 +190,5 @@ public class EquipmentControllerTest {
         mockMvc.perform(get("/api/equipment/{id}", createdEquipment.id()))
                 .andExpect(status().isNotFound());
     }
-}
+
+  }
