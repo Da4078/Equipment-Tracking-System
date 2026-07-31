@@ -3,7 +3,9 @@ package org.daniel.equipmenttrackingsystem.controller;
 import jakarta.validation.Valid;
 import org.daniel.equipmenttrackingsystem.dto.EmployeeRequest;
 import org.daniel.equipmenttrackingsystem.dto.EmployeeResponse;
+import org.daniel.equipmenttrackingsystem.dto.EquipmentResponse;
 import org.daniel.equipmenttrackingsystem.service.EmployeeService;
+import org.daniel.equipmenttrackingsystem.service.EquipmentService;
 import org.springdoc.core.annotations.ParameterObject;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -13,6 +15,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.List;
 import java.util.UUID;
 
 @RestController
@@ -20,9 +23,11 @@ import java.util.UUID;
 public class EmployeeController {
 
     private final EmployeeService employeeService;
+    private final EquipmentService equipmentService;
 
-    public EmployeeController(EmployeeService employeeService) {
+    public EmployeeController(EmployeeService employeeService, EquipmentService equipmentService) {
         this.employeeService = employeeService;
+        this.equipmentService = equipmentService;
     }
 
     @PostMapping
@@ -42,6 +47,11 @@ public class EmployeeController {
             @ParameterObject
             @PageableDefault(page = 0, size = 10, sort = "lastName", direction = Sort.Direction.ASC) Pageable pageable) {
         return ResponseEntity.ok(employeeService.getAllEmployees(pageable));
+    }
+
+    @GetMapping("/{id}/equipment")
+    public ResponseEntity<List<EquipmentResponse>> getEquipmentHeldByEmployee(@PathVariable UUID id){
+        return ResponseEntity.ok(equipmentService.  getEquipmentHeldByEmployee(id));
     }
 
     @PutMapping("/{id}")

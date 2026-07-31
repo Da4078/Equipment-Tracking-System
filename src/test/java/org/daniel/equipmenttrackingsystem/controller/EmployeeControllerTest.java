@@ -3,6 +3,13 @@ package org.daniel.equipmenttrackingsystem.controller;
 import jakarta.transaction.Transactional;
 import org.daniel.equipmenttrackingsystem.dto.EmployeeRequest;
 import org.daniel.equipmenttrackingsystem.dto.EmployeeResponse;
+import org.daniel.equipmenttrackingsystem.dto.EquipmentRequest;
+import org.daniel.equipmenttrackingsystem.dto.EquipmentResponse;
+import org.daniel.equipmenttrackingsystem.enums.EquipmentStatus;
+import org.daniel.equipmenttrackingsystem.enums.EquipmentType;
+import org.daniel.equipmenttrackingsystem.service.AssignmentService;
+import org.daniel.equipmenttrackingsystem.service.EmployeeService;
+import org.daniel.equipmenttrackingsystem.service.EquipmentService;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -31,6 +38,15 @@ public class EmployeeControllerTest {
 
     @Autowired
     private ObjectMapper objectMapper;
+
+    @Autowired
+    private AssignmentService assignmentService;
+
+    @Autowired
+    private EquipmentService equipmentService;
+
+    @Autowired
+    private EmployeeService employeeService;
 
     private EmployeeResponse createEmployeeTest(String firstName,
                                                 String lastName,
@@ -211,5 +227,38 @@ public class EmployeeControllerTest {
                 .andExpect(status().isNotFound());
     }
 
+    @Test
+    @DisplayName("GET /api/employees/{id}/equipment - Should return equipment held by employee")
+    void should_get_equipment_held_by_employee() throws Exception {
+
+        EquipmentRequest eqRequest = new EquipmentRequest(
+                "iPhone 17 PRO MAX",
+                EquipmentType.PHONE,
+                "Apple",
+                "PRO MAX",
+                EquipmentStatus.AVAILABLE,
+                "SN-100"
+        );
+        EquipmentResponse eq = equipmentService.createEquipment(eqRequest);
+
+        EmployeeRequest empRequest = new EmployeeRequest(
+                "John",
+                "Doe",
+                "john@doe.com",
+                "Engineering",
+                "Developer",
+                LocalDate.now(),
+                true
+        );
+        EmployeeResponse emp = employeeService.createEmployee(empRequest);
+
+        assignmentService.assignEquipment(emp.id(), eq.id());
+
+        mockMvc.perform(get("/api/employees/{id}/equipment", emp.id()))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$", hasSize(1)))
+                .andExpect(jsonPath("$[0].id", is(eq.id().toString())))
+                .andExpect(jsonPath("$[0].serialNumber", is("SN-100")));
+    }
 
 }

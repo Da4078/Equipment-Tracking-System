@@ -5,11 +5,16 @@ import org.daniel.equipmenttrackingsystem.enums.EquipmentStatus;
 import org.daniel.equipmenttrackingsystem.enums.EquipmentType;
 import org.daniel.equipmenttrackingsystem.exception.BusinessRuleException;
 import org.daniel.equipmenttrackingsystem.exception.ResourceNotFoundException;
+import org.daniel.equipmenttrackingsystem.repository.AssignmentRepository;
+import org.daniel.equipmenttrackingsystem.repository.EmployeeRepository;
 import org.daniel.equipmenttrackingsystem.repository.EquipmentRepository;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDate;
 import java.util.List;
@@ -18,6 +23,7 @@ import java.util.UUID;
 import static org.junit.jupiter.api.Assertions.*;
 
 @SpringBootTest
+@Transactional
 public class EquipmentServiceTest {
 
     @Autowired
@@ -25,6 +31,12 @@ public class EquipmentServiceTest {
 
     @Autowired
     private EquipmentRepository equipmentRepository;
+
+    @Autowired
+    private EmployeeRepository employeeRepository;
+
+    @Autowired
+    private AssignmentRepository assignmentRepository;
 
     @Autowired
     private EmployeeService employeeService;
@@ -35,6 +47,8 @@ public class EquipmentServiceTest {
     @BeforeEach
     void setUp() {
         equipmentRepository.deleteAll();
+        assignmentRepository.deleteAll();
+        employeeRepository.deleteAll();
     }
 
     @Test
@@ -87,8 +101,7 @@ public class EquipmentServiceTest {
                 () -> equipmentService.createEquipment(equipment2)
         );
 
-        assertEquals("Equipment with this serial number already exists", exception.getMessage());
-    }
+        assertEquals("Equipment with serial number '" + equipment2.serialNumber() + "' already exists", exception.getMessage());    }
 
     @Test
     void should_get_equipment_by_id() {
@@ -155,15 +168,18 @@ public class EquipmentServiceTest {
                 "SN-01-0000097"
         );
 
-        // When
         equipmentService.createEquipment(equipment1);
         equipmentService.createEquipment(equipment2);
 
-        List<EquipmentResponse> response = equipmentService.getAllEquipment();
+        // When
+        Page<EquipmentResponse> response = equipmentService.getAllEquipment(
+                null,
+                PageRequest.of(0, 10));
 
         // Then
         assertNotNull(response);
-        assertEquals(2, response.size());
+        assertEquals(2, response.getTotalElements());
+        assertEquals(2, response.getContent().size());
     }
 
     @Test
@@ -214,7 +230,6 @@ public class EquipmentServiceTest {
         // When
         equipmentService.deleteEquipment(response.id());
 
-        // Then (Fetching deleted equipment throws ResourceNotFoundException)
         assertThrows(
                 ResourceNotFoundException.class,
                 () -> equipmentService.getEquipmentById(response.id())
@@ -253,5 +268,139 @@ public class EquipmentServiceTest {
         // Then
         assertNotNull(softDeleted);
         assertEquals(EquipmentStatus.RETIRED, softDeleted.status());
+    }
+
+    @Test
+    void should_get_all_available_equipment(){
+        //Given
+        EquipmentRequest availableEquipment = new EquipmentRequest(
+                "iPhone 17 PRO MAX",
+                EquipmentType.PHONE,
+                "Apple",
+                "PRO MAX",
+                EquipmentStatus.AVAILABLE,
+                "SN-100"
+        );
+        EquipmentRequest retiredEquipment = new EquipmentRequest(
+                "MacBook Pro 16",
+                EquipmentType.LAPTOP,
+                "Apple",
+                "M3",
+                EquipmentStatus.RETIRED,
+                "SN-200"
+        );
+
+        equipmentService.createEquipment(availableEquipment);
+        equipmentService.createEquipment(retiredEquipment);
+
+        //When
+        List<EquipmentResponse> availableList = equipmentService.getAvailableEquipment();
+
+        //Then
+        assertNotNull(availableList);
+        assertEquals(1, availableList.size());
+        assertEquals("SN-100", availableList.get(0).serialNumber());
+        assertEquals(EquipmentStatus.AVAILABLE, availableList.get(0).status());
+    }
+
+    @Test
+    void should_get_all_outstanding_equipment() {
+        // Given
+        EquipmentRequest eqRequest1 = new EquipmentRequest(
+                "iPhone 17 PRO MAX",
+                EquipmentType.PHONE,
+                "Apple",
+                "PRO MAX",
+                EquipmentStatus.AVAILABLE,
+                "SN-100"
+        );
+        EquipmentRequest eqRequest2 = new EquipmentRequest(
+                "Dell XPS 15",
+                EquipmentType.LAPTOP,
+                "Dell",
+                "XPS",
+                EquipmentStatus.AVAILABLE,
+                "SN-200"
+        );
+
+        EquipmentResponse eq1 = equipmentService.createEquipment(eqRequest1);
+        equipmentService.createEquipment(eqRequest2);
+
+        EmployeeRequest employeeRequest = new EmployeeRequest(
+                "John",
+                "Doe",
+                "john@doe.com",
+                "Engineering",
+                "Developer",
+                LocalDate.now(),
+                true
+        );
+        EmployeeResponse employee = employeeService.createEmployee(employeeRequest);
+
+        assignmentService.assignEquipment(employee.id(), eq1.id());
+
+        // When
+        List<EquipmentResponse> outstandingList = equipmentService.getOutstandingEquipment();
+
+        // Then
+        assertNotNull(outstandingList);
+        assertEquals(1, outstandingList.size());
+        assertEquals(eq1.id(), outstandingList.get(0).id());
+        assertEquals("SN-100", outstandingList.get(0).serialNumber());
+    }
+
+    @Test
+    void should_get_equipment_held_by_given_employee() {
+        // Given
+        EquipmentRequest eqRequest1 = new EquipmentRequest(
+                "iPhone 17 PRO MAX",
+                EquipmentType.PHONE,
+                "Apple",
+                "PRO MAX",
+                EquipmentStatus.AVAILABLE,
+                "SN-100"
+        );
+        EquipmentRequest eqRequest2 = new EquipmentRequest(
+                "Dell XPS 15",
+                EquipmentType.LAPTOP,
+                "Dell",
+                "XPS",
+                EquipmentStatus.AVAILABLE,
+                "SN-200"
+        );
+
+        EquipmentResponse eq1 = equipmentService.createEquipment(eqRequest1);
+        EquipmentResponse eq2 = equipmentService.createEquipment(eqRequest2);
+
+        EmployeeResponse emp1 = employeeService.createEmployee(new EmployeeRequest(
+                "John",
+                "Doe",
+                "john@doe.com",
+                "Dev",
+                "Lead",
+                LocalDate.now(),
+                true
+        ));
+        EmployeeResponse emp2 = employeeService.createEmployee(new EmployeeRequest(
+                "Jane",
+                "Smith",
+                "jane@smith.com",
+                "QA",
+                "Tester",
+                LocalDate.now(),
+                true
+        ));
+
+        assignmentService.assignEquipment(emp1.id(), eq1.id());
+        assignmentService.assignEquipment(emp2.id(), eq2.id());
+
+        // When
+        List<EquipmentResponse> emp1Equipment = equipmentService.getEquipmentHeldByEmployee(emp1.id());
+
+        // Then
+        assertNotNull(emp1Equipment);
+        assertEquals(1, emp1Equipment.size());
+        assertEquals(eq1.id(), emp1Equipment.get(0).id());
+        assertEquals("SN-100", emp1Equipment.get(0).serialNumber());
     }
 }
