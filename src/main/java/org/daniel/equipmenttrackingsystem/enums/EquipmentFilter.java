@@ -1,7 +1,7 @@
 package org.daniel.equipmenttrackingsystem.enums;
 
 import org.daniel.equipmenttrackingsystem.model.Equipment;
-import org.daniel.equipmenttrackingsystem.repository.EquipmentSpecifications;
+import org.daniel.equipmenttrackingsystem.service.EquipmentSpecifications;
 import org.springframework.data.jpa.domain.Specification;
 
 public enum EquipmentFilter {

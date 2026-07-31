@@ -229,7 +229,7 @@ class EmployeeServiceTest {
 
     @Test
     void should_not_delete_employee_with_assignment() {
-        // Given
+        //Given
         EmployeeRequest employee = new EmployeeRequest(
                 "John",
                 "Doe",
@@ -254,7 +254,7 @@ class EmployeeServiceTest {
 
         assignmentService.assignEquipment(savedEmployee.id(), savedEquipment.id());
 
-        // When
+        //When
         BusinessRuleException exception = assertThrows(
                 BusinessRuleException.class,
                 () -> employeeService.deleteEmployee(savedEmployee.id())
@@ -262,7 +262,7 @@ class EmployeeServiceTest {
 
         assertEquals("Cannot delete employee with active equipment assignments", exception.getMessage());
 
-        // Then (Employee must still exist)
+        //Then
         EmployeeResponse employeeInDb = employeeService.getEmployeeById(savedEmployee.id());
         assertNotNull(employeeInDb);
         assertEquals(savedEmployee.id(), employeeInDb.id());

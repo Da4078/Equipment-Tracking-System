@@ -9,7 +9,6 @@ import org.daniel.equipmenttrackingsystem.exception.ResourceNotFoundException;
 import org.daniel.equipmenttrackingsystem.model.Equipment;
 import org.daniel.equipmenttrackingsystem.repository.AssignmentRepository;
 import org.daniel.equipmenttrackingsystem.repository.EquipmentRepository;
-import org.daniel.equipmenttrackingsystem.repository.EquipmentSpecifications;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.domain.Specification;

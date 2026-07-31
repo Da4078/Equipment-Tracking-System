@@ -1,4 +1,4 @@
-package org.daniel.equipmenttrackingsystem.repository;
+package org.daniel.equipmenttrackingsystem.service;
 
 import jakarta.persistence.criteria.Join;
 import jakarta.persistence.criteria.JoinType;
