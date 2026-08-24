@@ -41,7 +41,6 @@ public class EquipmentController {
     }
 
     @GetMapping
-    @PreAuthorize("hasAnyRole('ADMIN', 'EMPLOYEE')")
     public ResponseEntity<Page<EquipmentResponse>> getAllEquipment(
             @RequestParam(name = "filter", required = false) EquipmentFilter equipmentFilter,
             @ParameterObject Pageable pageable) {
