@@ -3,26 +3,26 @@ package org.daniel.equipmenttrackingsystem.dto;
 import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Size;
+import org.daniel.equipmenttrackingsystem.enums.UserRole;
 import org.daniel.equipmenttrackingsystem.model.User;
 
-public record UserRequest(
-        @NotBlank
-        @Size(max = 50, message = "First name cannot exceed 50 characters")
-        String firstName,
+import java.util.Set;
 
-        @NotBlank
-        @Size(max = 50, message = "Last name cannot exceed 50 characters")
-        String lastName,
+public record UserRequest(
 
         @NotBlank(message = "Email is required")
         @Email
-        String email
+        String email,
+
+        @NotBlank
+        @Size(min = 6)
+        String password
 ) {
     public User toEntity() {
         User user = new User();
-        user.setFirstName(this.firstName());
-        user.setLastName(this.lastName());
         user.setEmail(this.email());
+        user.setPassword(this.password());
+        user.setRoles(Set.of(UserRole.ROLE_EMPLOYEE));
         return user;
     }
 }
