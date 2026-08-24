@@ -6,8 +6,6 @@ import java.util.UUID;
 
 public record UserResponse(
         UUID id,
-        String firstName,
-        String lastName,
         String email
 ) {
     public static UserResponse fromEntity(User user) {
@@ -16,8 +14,6 @@ public record UserResponse(
         }
         return new UserResponse(
                 user.getId(),
-                user.getFirstName(),
-                user.getLastName(),
                 user.getEmail()
         );
     }
