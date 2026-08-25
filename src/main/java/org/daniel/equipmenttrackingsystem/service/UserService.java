@@ -1,5 +1,6 @@
 package org.daniel.equipmenttrackingsystem.service;
 
+import org.daniel.equipmenttrackingsystem.config.JwtService;
 import org.daniel.equipmenttrackingsystem.dto.UserRequest;
 import org.daniel.equipmenttrackingsystem.dto.UserResponse;
 import org.daniel.equipmenttrackingsystem.exception.BusinessRuleException;
@@ -24,11 +25,14 @@ public class UserService implements UserDetailsService {
 
     private final UserRepository userRepository;
     private final PasswordEncoder passwordEncoder;
+    private final JwtService jwtService;
 
-    public UserService(UserRepository userRepository, PasswordEncoder passwordEncoder) {
-
+    public UserService(UserRepository userRepository,
+                       PasswordEncoder passwordEncoder,
+                       JwtService jwtService) {
         this.userRepository = userRepository;
         this.passwordEncoder = passwordEncoder;
+        this.jwtService = jwtService;
     }
 
     @Transactional
@@ -41,8 +45,13 @@ public class UserService implements UserDetailsService {
         if (user.getPassword() != null) {
             user.setPassword(passwordEncoder.encode(user.getPassword()));
         }
+
         User savedUser = userRepository.save(user);
-        return UserResponse.fromEntity(savedUser);
+
+        UserDetails userDetails = loadUserByUsername(savedUser.getEmail());
+        String token = jwtService.generateToken(userDetails);
+
+        return UserResponse.fromEntity(savedUser, token);
     }
 
     @Transactional(readOnly = true)
@@ -50,8 +59,8 @@ public class UserService implements UserDetailsService {
         return userRepository.findById(id).map(UserResponse::fromEntity);
     }
 
-    @Transactional
-    public Optional<UserResponse> getUserByEmail(String email){
+    @Transactional(readOnly = true)
+    public Optional<UserResponse> getUserByEmail(String email) {
         return userRepository.findByEmail(email).map(UserResponse::fromEntity);
     }
 
@@ -68,9 +77,10 @@ public class UserService implements UserDetailsService {
                 .orElseThrow(() -> new ResourceNotFoundException("User not found with ID: " + id));
 
         user.setEmail(userRequest.email());
-        user.setPassword(
-                passwordEncoder.encode(userRequest.password())
-        );
+        if (userRequest.password() != null && !userRequest.password().isBlank()) {
+            user.setPassword(passwordEncoder.encode(userRequest.password()));
+        }
+
         User updatedUser = userRepository.save(user);
         return UserResponse.fromEntity(updatedUser);
     }
@@ -84,7 +94,7 @@ public class UserService implements UserDetailsService {
 
     @Override
     @Transactional(readOnly = true)
-    public UserDetails loadUserByUsername(String email) throws UsernameNotFoundException{
+    public UserDetails loadUserByUsername(String email) throws UsernameNotFoundException {
         User user = userRepository.findByEmail(email)
                 .orElseThrow(() -> new UsernameNotFoundException("User not found with email: " + email));
 

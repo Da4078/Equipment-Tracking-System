@@ -6,15 +6,14 @@ import java.util.UUID;
 
 public record UserResponse(
         UUID id,
-        String email
+        String email,
+        String token
 ) {
     public static UserResponse fromEntity(User user) {
-        if (user == null) {
-            return null;
-        }
-        return new UserResponse(
-                user.getId(),
-                user.getEmail()
-        );
+        return new UserResponse(user.getId(), user.getEmail(), null);
+    }
+
+    public static UserResponse fromEntity(User user, String token) {
+        return new UserResponse(user.getId(), user.getEmail(), token);
     }
 }
