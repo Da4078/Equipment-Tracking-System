@@ -3,9 +3,8 @@
 Welcome to the Summer Practice at OG-CS Software Company!
 
 Over the next few weeks you will build a small but complete backend application (with a frontend) for keeping track of company equipment. Our equipment manager is responsible for issuing items such as monitors, laptops, and headsets to employees, keeping a record of what each person currently holds, and making sure everything is returned when someone leaves the company. Your job is to build the system that supports this.
-
+ 
 ---
-
 
 ## Backend Features
 
