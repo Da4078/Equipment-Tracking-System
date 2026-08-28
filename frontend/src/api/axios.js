@@ -18,4 +18,23 @@ api.interceptors.request.use(
     (error) => Promise.reject(error)
 );
 
+api.interceptors.response.use(
+    (response) => response,
+    (error) => {
+        let message = "An unexpected error occurred";
+        if(error.response?.data){
+            const data = error.response.data;
+            if (typeof data === 'string') {
+                message = data;
+            } else if (data.message) {
+                message = data.message;
+            } else if (typeof data === 'object') {
+                // Form field validation errors ({ field: "error description" })
+                message = Object.values(data).join(', ');
+            }
+        }
+        return Promise.reject(new Error(message));
+    }
+)
+
 export default api;
