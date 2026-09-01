@@ -4,6 +4,7 @@ import org.daniel.equipmenttrackingsystem.enums.EquipmentStatus;
 import org.daniel.equipmenttrackingsystem.enums.EquipmentType;
 import org.daniel.equipmenttrackingsystem.model.Equipment;
 
+import java.time.LocalDateTime;
 import java.util.UUID;
 
 public record EquipmentResponse(
@@ -13,13 +14,24 @@ public record EquipmentResponse(
         String brand,
         String model,
         EquipmentStatus status,
-        String serialNumber
+        String serialNumber,
+        UUID assignmentId,
+        UUID assignedEmployeeId,
+        String assignedEmployeeName,
+        LocalDateTime assignedAt
 ) {
 
-    public static EquipmentResponse fromEntity(Equipment equipment) {
+    public static EquipmentResponse fromEntity(
+            Equipment equipment,
+            UUID assignmentId,
+            UUID assignedEmployeeId,
+            String assignedEmployeeName,
+            LocalDateTime assignedAt
+            ) {
         if (equipment == null) {
             return null;
         }
+
         return new EquipmentResponse(
                 equipment.getId(),
                 equipment.getEquipmentName(),
@@ -27,7 +39,11 @@ public record EquipmentResponse(
                 equipment.getBrand(),
                 equipment.getModel(),
                 equipment.getStatus(),
-                equipment.getSerialNumber()
+                equipment.getSerialNumber(),
+                assignmentId,
+                assignedEmployeeId,
+                assignedEmployeeName,
+                assignedAt
         );
     }
 }

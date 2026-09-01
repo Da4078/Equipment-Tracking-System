@@ -49,14 +49,14 @@ public class EquipmentController {
 
 
     @PutMapping("/{id}")
-    @PreAuthorize("hasAnyRole('ADMIN', 'EMPLOYEE')")
+    @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<EquipmentResponse> updateEquipment(@PathVariable UUID id,
                                                              @Valid @RequestBody EquipmentRequest equipmentRequest) {
         return ResponseEntity.ok(equipmentService.updateEquipment(id, equipmentRequest));
     }
 
     @DeleteMapping("/{id}")
-    @PreAuthorize("hasAnyRole('ADMIN', 'EMPLOYEE')")
+    @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<Void> deleteEquipment(@PathVariable UUID id) {
         equipmentService.deleteEquipment(id);
         return ResponseEntity.noContent().build();

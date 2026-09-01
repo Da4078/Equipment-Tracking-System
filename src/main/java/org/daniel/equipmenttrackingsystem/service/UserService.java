@@ -27,9 +27,11 @@ public class UserService implements UserDetailsService {
     private final PasswordEncoder passwordEncoder;
     private final JwtService jwtService;
 
-    public UserService(UserRepository userRepository,
-                       PasswordEncoder passwordEncoder,
-                       JwtService jwtService) {
+    public UserService(
+            UserRepository userRepository,
+            PasswordEncoder passwordEncoder,
+            JwtService jwtService
+    ) {
         this.userRepository = userRepository;
         this.passwordEncoder = passwordEncoder;
         this.jwtService = jwtService;
@@ -37,18 +39,26 @@ public class UserService implements UserDetailsService {
 
     @Transactional
     public UserResponse createUser(UserRequest userRequest) {
+
         if (userRepository.existsByEmail(userRequest.email())) {
-            throw new BusinessRuleException("User with email '" + userRequest.email() + "' already exists");
+            throw new BusinessRuleException(
+                    "User with email '" + userRequest.email() + "' already exists"
+            );
         }
 
         User user = userRequest.toEntity();
+
         if (user.getPassword() != null) {
-            user.setPassword(passwordEncoder.encode(user.getPassword()));
+            user.setPassword(
+                    passwordEncoder.encode(user.getPassword())
+            );
         }
 
         User savedUser = userRepository.save(user);
 
-        UserDetails userDetails = loadUserByUsername(savedUser.getEmail());
+        UserDetails userDetails =
+                loadUserByUsername(savedUser.getEmail());
+
         String token = jwtService.generateToken(userDetails);
 
         return UserResponse.fromEntity(savedUser, token);
@@ -56,50 +66,89 @@ public class UserService implements UserDetailsService {
 
     @Transactional(readOnly = true)
     public Optional<UserResponse> getUserById(UUID id) {
-        return userRepository.findById(id).map(UserResponse::fromEntity);
+        return userRepository.findById(id)
+                .map(UserResponse::fromEntity);
     }
 
     @Transactional(readOnly = true)
     public Optional<UserResponse> getUserByEmail(String email) {
-        return userRepository.findByEmail(email).map(UserResponse::fromEntity);
+        return userRepository.findByEmail(email)
+                .map(UserResponse::fromEntity);
     }
 
     @Transactional(readOnly = true)
     public List<UserResponse> getAllUsers() {
-        return userRepository.findAll().stream()
+        return userRepository.findAll()
+                .stream()
                 .map(UserResponse::fromEntity)
                 .toList();
     }
 
     @Transactional
-    public UserResponse updateUser(UUID id, UserRequest userRequest) {
+    public UserResponse updateUser(
+            UUID id,
+            UserRequest userRequest
+    ) {
         User user = userRepository.findById(id)
-                .orElseThrow(() -> new ResourceNotFoundException("User not found with ID: " + id));
+                .orElseThrow(() ->
+                        new ResourceNotFoundException(
+                                "User not found with ID: " + id
+                        )
+                );
 
         user.setEmail(userRequest.email());
-        if (userRequest.password() != null && !userRequest.password().isBlank()) {
-            user.setPassword(passwordEncoder.encode(userRequest.password()));
+
+        if (userRequest.password() != null
+                && !userRequest.password().isBlank()) {
+
+            user.setPassword(
+                    passwordEncoder.encode(userRequest.password())
+            );
         }
 
+        /*
+         * Allow the role to be changed when an ADMIN updates
+         * another user.
+         */
+        user.setRoles(
+                userRequest.toEntity().getRoles()
+        );
+
         User updatedUser = userRepository.save(user);
+
         return UserResponse.fromEntity(updatedUser);
     }
 
     @Transactional
     public void deleteUser(UUID id) {
+
         userRepository.findById(id)
-                .orElseThrow(() -> new ResourceNotFoundException("User not found with ID: " + id));
+                .orElseThrow(() ->
+                        new ResourceNotFoundException(
+                                "User not found with ID: " + id
+                        )
+                );
+
         userRepository.deleteById(id);
     }
 
     @Override
     @Transactional(readOnly = true)
-    public UserDetails loadUserByUsername(String email) throws UsernameNotFoundException {
-        User user = userRepository.findByEmail(email)
-                .orElseThrow(() -> new UsernameNotFoundException("User not found with email: " + email));
+    public UserDetails loadUserByUsername(String email)
+            throws UsernameNotFoundException {
 
-        var authorities = user.getRoles().stream()
-                .map(role -> new SimpleGrantedAuthority(role.name()))
+        User user = userRepository.findByEmail(email)
+                .orElseThrow(() ->
+                        new UsernameNotFoundException(
+                                "User not found with email: " + email
+                        )
+                );
+
+        var authorities = user.getRoles()
+                .stream()
+                .map(role ->
+                        new SimpleGrantedAuthority(role.name())
+                )
                 .collect(Collectors.toSet());
 
         return new org.springframework.security.core.userdetails.User(

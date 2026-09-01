@@ -28,7 +28,6 @@ export default function EquipmentModal({ equipment, onClose, onSuccess }) {
                 status: equipment.status || 'AVAILABLE'
             });
         } else {
-            // Fresh creation always starts as AVAILABLE automatically
             setFormData({
                 equipmentName: '',
                 type: 'LAPTOP',
@@ -101,7 +100,6 @@ export default function EquipmentModal({ equipment, onClose, onSuccess }) {
                             />
                         </div>
 
-                        {/* Categorized Equipment Type Dropdown */}
                         <div>
                             <label className="block text-xs font-semibold uppercase text-slate-400 mb-1">Equipment Type *</label>
                             <select
@@ -176,7 +174,6 @@ export default function EquipmentModal({ equipment, onClose, onSuccess }) {
                             </select>
                         </div>
 
-                        {/* Status Control: Excludes 'AVAILABLE' from manual selection */}
                         <div>
                             <label className="block text-xs font-semibold uppercase text-slate-400 mb-1">Status *</label>
                             {isEditMode ? (
@@ -186,7 +183,6 @@ export default function EquipmentModal({ equipment, onClose, onSuccess }) {
                                     onChange={handleChange}
                                     className="w-full bg-slate-950 border border-slate-800 rounded-lg px-3 py-2 text-sm text-slate-100 focus:outline-none focus:border-blue-500"
                                 >
-                                    {/* If item is currently AVAILABLE, keep it viewable/locked; otherwise allow switching between MAINTENANCE or IN_USE (managed via assign/return) */}
                                     {formData.status === 'AVAILABLE' && (
                                         <option value="AVAILABLE">Available (Managed via Return)</option>
                                     )}
