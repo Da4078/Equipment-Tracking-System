@@ -5,7 +5,10 @@ import org.daniel.equipmenttrackingsystem.dto.UserRequest;
 import org.daniel.equipmenttrackingsystem.dto.UserResponse;
 import org.daniel.equipmenttrackingsystem.exception.BusinessRuleException;
 import org.daniel.equipmenttrackingsystem.exception.ResourceNotFoundException;
+import org.daniel.equipmenttrackingsystem.model.Employee;
 import org.daniel.equipmenttrackingsystem.model.User;
+import org.daniel.equipmenttrackingsystem.repository.AssignmentRepository;
+import org.daniel.equipmenttrackingsystem.repository.EmployeeRepository;
 import org.daniel.equipmenttrackingsystem.repository.UserRepository;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.userdetails.UserDetails;
@@ -24,15 +27,21 @@ import java.util.stream.Collectors;
 public class UserService implements UserDetailsService {
 
     private final UserRepository userRepository;
+    private final EmployeeRepository employeeRepository;
+    private final AssignmentRepository assignmentRepository;
     private final PasswordEncoder passwordEncoder;
     private final JwtService jwtService;
 
     public UserService(
             UserRepository userRepository,
+            EmployeeRepository employeeRepository,
+            AssignmentRepository assignmentRepository,
             PasswordEncoder passwordEncoder,
             JwtService jwtService
     ) {
         this.userRepository = userRepository;
+        this.employeeRepository = employeeRepository;
+        this.assignmentRepository = assignmentRepository;
         this.passwordEncoder = passwordEncoder;
         this.jwtService = jwtService;
     }
@@ -46,6 +55,14 @@ public class UserService implements UserDetailsService {
             );
         }
 
+        if (userRequest.role().name().equals("EMPLOYEE")
+                && employeeRepository.existsByEmail(userRequest.email())) {
+
+            throw new BusinessRuleException(
+                    "Employee with email '" + userRequest.email() + "' already exists"
+            );
+        }
+
         User user = userRequest.toEntity();
 
         if (user.getPassword() != null) {
@@ -54,14 +71,29 @@ public class UserService implements UserDetailsService {
             );
         }
 
-        User savedUser = userRepository.save(user);
+        if (userRequest.role().name().equals("EMPLOYEE")) {
+
+            Employee employee = userRequest.toEmployeeEntity();
+
+            Employee savedEmployee =
+                    employeeRepository.save(employee);
+
+            user.setEmployee(savedEmployee);
+        }
+
+        User savedUser =
+                userRepository.save(user);
 
         UserDetails userDetails =
                 loadUserByUsername(savedUser.getEmail());
 
-        String token = jwtService.generateToken(userDetails);
+        String token =
+                jwtService.generateToken(userDetails);
 
-        return UserResponse.fromEntity(savedUser, token);
+        return UserResponse.fromEntity(
+                savedUser,
+                token
+        );
     }
 
     @Transactional(readOnly = true)
@@ -89,6 +121,7 @@ public class UserService implements UserDetailsService {
             UUID id,
             UserRequest userRequest
     ) {
+
         User user = userRepository.findById(id)
                 .orElseThrow(() ->
                         new ResourceNotFoundException(
@@ -102,19 +135,18 @@ public class UserService implements UserDetailsService {
                 && !userRequest.password().isBlank()) {
 
             user.setPassword(
-                    passwordEncoder.encode(userRequest.password())
+                    passwordEncoder.encode(
+                            userRequest.password()
+                    )
             );
         }
 
-        /*
-         * Allow the role to be changed when an ADMIN updates
-         * another user.
-         */
         user.setRoles(
                 userRequest.toEntity().getRoles()
         );
 
-        User updatedUser = userRepository.save(user);
+        User updatedUser =
+                userRepository.save(user);
 
         return UserResponse.fromEntity(updatedUser);
     }
@@ -122,14 +154,14 @@ public class UserService implements UserDetailsService {
     @Transactional
     public void deleteUser(UUID id) {
 
-        userRepository.findById(id)
+        User user = userRepository.findById(id)
                 .orElseThrow(() ->
                         new ResourceNotFoundException(
                                 "User not found with ID: " + id
                         )
                 );
 
-        userRepository.deleteById(id);
+        userRepository.delete(user);
     }
 
     @Override
@@ -137,19 +169,24 @@ public class UserService implements UserDetailsService {
     public UserDetails loadUserByUsername(String email)
             throws UsernameNotFoundException {
 
-        User user = userRepository.findByEmail(email)
-                .orElseThrow(() ->
-                        new UsernameNotFoundException(
-                                "User not found with email: " + email
-                        )
-                );
+        User user =
+                userRepository.findByEmail(email)
+                        .orElseThrow(() ->
+                                new UsernameNotFoundException(
+                                        "User not found with email: "
+                                                + email
+                                )
+                        );
 
-        var authorities = user.getRoles()
-                .stream()
-                .map(role ->
-                        new SimpleGrantedAuthority(role.name())
-                )
-                .collect(Collectors.toSet());
+        var authorities =
+                user.getRoles()
+                        .stream()
+                        .map(role ->
+                                new SimpleGrantedAuthority(
+                                        role.name()
+                                )
+                        )
+                        .collect(Collectors.toSet());
 
         return new org.springframework.security.core.userdetails.User(
                 user.getEmail(),
