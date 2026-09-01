@@ -15,6 +15,7 @@ import org.daniel.equipmenttrackingsystem.repository.EquipmentRepository;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDateTime;
+import java.util.List;
 import java.util.UUID;
 
 @Service
@@ -108,5 +109,36 @@ public class AssignmentService {
         Assignment saved = assignmentRepository.save(assignment);
 
         return mapToDto(saved);
+    }
+
+    @Transactional
+    public List<AssignmentResponse> getAssignmentsForEmployee(UUID employeeId) {
+
+        employeeRepository.findById(employeeId)
+                .orElseThrow(() ->
+                        new ResourceNotFoundException(
+                                "Employee not found with ID: " + employeeId
+                        ));
+
+        return assignmentRepository
+                .findAllByEmployeeIdOrderByAssignedAtDesc(employeeId)
+                .stream()
+                .map(this::mapToDto)
+                .toList();
+    }
+
+    @Transactional
+    public List<AssignmentResponse> getEquipmentHistory(UUID equipmentId) {
+        equipmentRepository.findById(equipmentId)
+                .orElseThrow(() ->
+                        new ResourceNotFoundException(
+                                "Equipment not found with ID: " + equipmentId
+                        ));
+
+        return assignmentRepository
+                .findAllByEquipmentIdOrderByAssignedAtDesc(equipmentId)
+                .stream()
+                .map(this::mapToDto)
+                .toList();
     }
 }

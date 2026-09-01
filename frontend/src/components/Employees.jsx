@@ -125,7 +125,6 @@ export default function Employees(){
 
     return (
         <div className="space-y-6">
-            {/* Header & Search Bar Toolbar */}
             <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-4 bg-slate-900/60 p-4 rounded-xl border border-slate-800">
                 <div className="relative flex-1">
                     <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-500 pointer-events-none" />
@@ -147,7 +146,6 @@ export default function Employees(){
                 </button>
             </div>
 
-            {/* Employee Data Table */}
             <div className="bg-slate-900/80 border border-slate-800 rounded-xl overflow-hidden shadow-xl">
                 {loading ? (
                     <div className="flex items-center justify-center p-12 text-slate-400 gap-3">
@@ -225,7 +223,6 @@ export default function Employees(){
                 )}
             </div>
 
-            {/* Create / Edit Employee Modal */}
             {isModalOpen && (
                 <div className="fixed inset-0 bg-slate-950/80 backdrop-blur-sm flex items-center justify-center p-4 z-50">
                     <div className="bg-slate-900 border border-slate-800 rounded-2xl w-full max-w-lg overflow-hidden shadow-2xl">

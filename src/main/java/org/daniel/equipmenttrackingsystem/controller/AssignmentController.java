@@ -6,6 +6,8 @@ import org.daniel.equipmenttrackingsystem.dto.AssignmentResponse;
 import org.daniel.equipmenttrackingsystem.service.AssignmentService;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+
+import java.util.List;
 import java.util.UUID;
 
 @RestController
@@ -27,5 +29,23 @@ public class AssignmentController {
     @PostMapping("/{id}/return")
     public ResponseEntity<AssignmentResponse> returnEquipment(@PathVariable UUID id){
         return ResponseEntity.ok(assignmentService.returnEquipment(id));
+    }
+
+    @GetMapping("/employee/{employeeId}")
+    public ResponseEntity<List<AssignmentResponse>> getEmployeeAssignments(
+            @PathVariable UUID employeeId) {
+
+        return ResponseEntity.ok(
+                assignmentService.getAssignmentsForEmployee(employeeId)
+        );
+    }
+
+    @GetMapping("/equipment/{equipmentId}/history")
+    public ResponseEntity<List<AssignmentResponse>> getEquipmentHistory(
+            @PathVariable UUID equipmentId) {
+
+        return ResponseEntity.ok(
+                assignmentService.getEquipmentHistory(equipmentId)
+        );
     }
 }

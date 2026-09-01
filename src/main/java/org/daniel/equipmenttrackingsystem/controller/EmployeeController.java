@@ -1,9 +1,11 @@
 package org.daniel.equipmenttrackingsystem.controller;
 
 import jakarta.validation.Valid;
+import org.daniel.equipmenttrackingsystem.dto.AssignmentResponse;
 import org.daniel.equipmenttrackingsystem.dto.EmployeeRequest;
 import org.daniel.equipmenttrackingsystem.dto.EmployeeResponse;
 import org.daniel.equipmenttrackingsystem.dto.EquipmentResponse;
+import org.daniel.equipmenttrackingsystem.service.AssignmentService;
 import org.daniel.equipmenttrackingsystem.service.EmployeeService;
 import org.daniel.equipmenttrackingsystem.service.EquipmentService;
 import org.springdoc.core.annotations.ParameterObject;
@@ -13,6 +15,7 @@ import org.springframework.data.domain.Sort;
 import org.springframework.data.web.PageableDefault;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -24,10 +27,12 @@ public class EmployeeController {
 
     private final EmployeeService employeeService;
     private final EquipmentService equipmentService;
+    private final AssignmentService assignmentService;
 
-    public EmployeeController(EmployeeService employeeService, EquipmentService equipmentService) {
+    public EmployeeController(EmployeeService employeeService, EquipmentService equipmentService, AssignmentService assignmentService) {
         this.employeeService = employeeService;
         this.equipmentService = equipmentService;
+        this.assignmentService = assignmentService;
     }
 
     @PostMapping
@@ -52,6 +57,16 @@ public class EmployeeController {
     @GetMapping("/{id}/equipment")
     public ResponseEntity<List<EquipmentResponse>> getEquipmentHeldByEmployee(@PathVariable UUID id){
         return ResponseEntity.ok(equipmentService.  getEquipmentHeldByEmployee(id));
+    }
+
+    @GetMapping("/{employeeId}/assignments")
+    @PreAuthorize("hasAnyRole('ADMIN', 'EMPLOYEE')")
+    public ResponseEntity<List<AssignmentResponse>> getEmployeeAssignments(
+            @PathVariable UUID employeeId) {
+
+        return ResponseEntity.ok(
+                assignmentService.getAssignmentsForEmployee(employeeId)
+        );
     }
 
     @PutMapping("/{id}")

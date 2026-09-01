@@ -2,27 +2,42 @@ package org.daniel.equipmenttrackingsystem.dto;
 
 import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;
-import jakarta.validation.constraints.Size;
-import org.daniel.equipmenttrackingsystem.enums.UserRole;
+import jakarta.validation.constraints.NotNull;
+import org.daniel.equipmenttrackingsystem.enums.SignupRole;
 import org.daniel.equipmenttrackingsystem.model.User;
-
-import java.util.Set;
 
 public record UserRequest(
 
         @NotBlank(message = "Email is required")
-        @Email
+        @Email(message = "Email must be valid")
         String email,
 
-        @NotBlank
-        @Size(min = 6)
-        String password
+        @NotBlank(message = "Password is required")
+        String password,
+
+        @NotNull(message = "Role is required")
+        SignupRole role
+
 ) {
+
     public User toEntity() {
         User user = new User();
-        user.setEmail(this.email());
-        user.setPassword(this.password());
-        user.setRoles(Set.of(UserRole.ROLE_EMPLOYEE));
+
+        user.setEmail(email);
+        user.setPassword(password);
+
+        user.setRoles(
+                switch (role) {
+                    case MANAGER -> java.util.Set.of(
+                            org.daniel.equipmenttrackingsystem.enums.UserRole.ROLE_ADMIN
+                    );
+
+                    case EMPLOYEE -> java.util.Set.of(
+                            org.daniel.equipmenttrackingsystem.enums.UserRole.ROLE_EMPLOYEE
+                    );
+                }
+        );
+
         return user;
     }
 }
