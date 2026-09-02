@@ -3,12 +3,9 @@ package org.daniel.equipmenttrackingsystem.service;
 import org.daniel.equipmenttrackingsystem.config.JwtService;
 import org.daniel.equipmenttrackingsystem.dto.UserRequest;
 import org.daniel.equipmenttrackingsystem.dto.UserResponse;
-import org.daniel.equipmenttrackingsystem.enums.SignupRole;
 import org.daniel.equipmenttrackingsystem.exception.BusinessRuleException;
 import org.daniel.equipmenttrackingsystem.exception.ResourceNotFoundException;
-import org.daniel.equipmenttrackingsystem.model.Employee;
 import org.daniel.equipmenttrackingsystem.model.User;
-import org.daniel.equipmenttrackingsystem.repository.EmployeeRepository;
 import org.daniel.equipmenttrackingsystem.repository.UserRepository;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.userdetails.UserDetails;
@@ -27,18 +24,15 @@ import java.util.stream.Collectors;
 public class UserService implements UserDetailsService {
 
     private final UserRepository userRepository;
-    private final EmployeeRepository employeeRepository;
     private final PasswordEncoder passwordEncoder;
     private final JwtService jwtService;
 
     public UserService(
             UserRepository userRepository,
-            EmployeeRepository employeeRepository,
             PasswordEncoder passwordEncoder,
             JwtService jwtService
     ) {
         this.userRepository = userRepository;
-        this.employeeRepository = employeeRepository;
         this.passwordEncoder = passwordEncoder;
         this.jwtService = jwtService;
     }
@@ -54,30 +48,11 @@ public class UserService implements UserDetailsService {
 
         User user = userRequest.toEntity();
 
-        if (userRequest.role() == SignupRole.EMPLOYEE) {
-
-            if (employeeRepository.existsByEmail(userRequest.email())) {
-                throw new BusinessRuleException(
-                        "Employee with email '" + userRequest.email() + "' already exists"
-                );
-            }
-
-            validateEmployeeData(userRequest);
-
-            Employee employee = userRequest.toEmployeeEntity();
-
-            Employee savedEmployee =
-                    employeeRepository.save(employee);
-
-            user.setEmployee(savedEmployee);
-        }
-
         user.setPassword(
                 passwordEncoder.encode(user.getPassword())
         );
 
-        User savedUser =
-                userRepository.save(user);
+        User savedUser = userRepository.save(user);
 
         UserDetails userDetails =
                 loadUserByUsername(savedUser.getEmail());
@@ -89,39 +64,6 @@ public class UserService implements UserDetailsService {
                 savedUser,
                 token
         );
-    }
-
-    private void validateEmployeeData(UserRequest request) {
-
-        if (request.firstName() == null || request.firstName().isBlank()) {
-            throw new BusinessRuleException(
-                    "First name is required for employees"
-            );
-        }
-
-        if (request.lastName() == null || request.lastName().isBlank()) {
-            throw new BusinessRuleException(
-                    "Last name is required for employees"
-            );
-        }
-
-        if (request.department() == null || request.department().isBlank()) {
-            throw new BusinessRuleException(
-                    "Department is required for employees"
-            );
-        }
-
-        if (request.position() == null || request.position().isBlank()) {
-            throw new BusinessRuleException(
-                    "Position is required for employees"
-            );
-        }
-
-        if (request.hireDate() == null) {
-            throw new BusinessRuleException(
-                    "Hire date is required for employees"
-            );
-        }
     }
 
     @Transactional(readOnly = true)
@@ -157,7 +99,18 @@ public class UserService implements UserDetailsService {
                         )
                 );
 
-        user.setEmail(userRequest.email());
+        String oldEmail = user.getEmail();
+        String newEmail = userRequest.email();
+
+        if (!oldEmail.equals(newEmail)
+                && userRepository.existsByEmail(newEmail)) {
+
+            throw new BusinessRuleException(
+                    "User with email '" + newEmail + "' already exists"
+            );
+        }
+
+        user.setEmail(newEmail);
 
         if (userRequest.password() != null
                 && !userRequest.password().isBlank()) {
@@ -174,20 +127,24 @@ public class UserService implements UserDetailsService {
         User updatedUser =
                 userRepository.save(user);
 
+        if (user.getEmployee() != null) {
+            user.getEmployee().setEmail(newEmail);
+        }
+
         return UserResponse.fromEntity(updatedUser);
     }
 
     @Transactional
     public void deleteUser(UUID id) {
 
-        userRepository.findById(id)
+        User user = userRepository.findById(id)
                 .orElseThrow(() ->
                         new ResourceNotFoundException(
                                 "User not found with ID: " + id
                         )
                 );
 
-        userRepository.deleteById(id);
+        userRepository.delete(user);
     }
 
     @Override

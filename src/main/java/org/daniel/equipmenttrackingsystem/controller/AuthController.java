@@ -5,7 +5,6 @@ import org.daniel.equipmenttrackingsystem.config.JwtService;
 import org.daniel.equipmenttrackingsystem.dto.LoginRequest;
 import org.daniel.equipmenttrackingsystem.dto.UserRequest;
 import org.daniel.equipmenttrackingsystem.dto.UserResponse;
-import org.daniel.equipmenttrackingsystem.model.User;
 import org.daniel.equipmenttrackingsystem.repository.UserRepository;
 import org.daniel.equipmenttrackingsystem.service.UserService;
 import org.springframework.http.HttpStatus;
@@ -70,17 +69,15 @@ public class AuthController {
         String token =
                 jwtService.generateToken(userDetails);
 
-        User user =
+        return ResponseEntity.ok(
                 userRepository.findByEmail(request.email())
+                        .map(user -> UserResponse.fromEntity(user, token))
                         .orElseThrow(() ->
                                 new UsernameNotFoundException(
                                         "User not found with email: "
                                                 + request.email()
                                 )
-                        );
-
-        return ResponseEntity.ok(
-                UserResponse.fromEntity(user, token)
+                        )
         );
     }
 }

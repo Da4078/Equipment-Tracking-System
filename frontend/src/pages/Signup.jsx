@@ -9,10 +9,7 @@ import {
     AlertCircle,
     Loader2,
     ArrowRight,
-    User,
-    Briefcase,
-    Building2,
-    Calendar
+    Briefcase
 } from 'lucide-react';
 import api from '../api/axios';
 
@@ -23,29 +20,8 @@ export default function SignUp() {
     const [password, setPassword] = useState('');
     const [showPassword, setShowPassword] = useState(false);
 
-    const [role, setRole] = useState('EMPLOYEE');
-
-    const [firstName, setFirstName] = useState('');
-    const [lastName, setLastName] = useState('');
-    const [department, setDepartment] = useState('');
-    const [position, setPosition] = useState('');
-    const [hireDate, setHireDate] = useState('');
-
     const [error, setError] = useState('');
     const [loading, setLoading] = useState(false);
-
-    const handleRoleChange = (newRole) => {
-        setRole(newRole);
-        setError('');
-
-        if (newRole === 'MANAGER') {
-            setFirstName('');
-            setLastName('');
-            setDepartment('');
-            setPosition('');
-            setHireDate('');
-        }
-    };
 
     const handleSubmit = async (e) => {
         e.preventDefault();
@@ -57,16 +33,8 @@ export default function SignUp() {
             const signupData = {
                 email,
                 password,
-                role
+                role: 'MANAGER'
             };
-
-            if (role === 'EMPLOYEE') {
-                signupData.firstName = firstName;
-                signupData.lastName = lastName;
-                signupData.department = department;
-                signupData.position = position;
-                signupData.hireDate = hireDate;
-            }
 
             console.log('SIGNUP DATA:', signupData);
 
@@ -90,7 +58,7 @@ export default function SignUp() {
             setError(
                 err.response?.data?.message ||
                 err.response?.data?.error ||
-                'Failed to create account.'
+                'Failed to create manager account.'
             );
         } finally {
             setLoading(false);
@@ -116,11 +84,11 @@ export default function SignUp() {
                     </div>
 
                     <h2 className="text-2xl font-bold tracking-tight text-white sm:text-3xl">
-                        Create Account
+                        Create Manager Account
                     </h2>
 
                     <p className="mt-1.5 text-sm text-slate-400">
-                        Join the Equipment Tracker
+                        Create an administrator account for the Equipment Tracker
                     </p>
                 </div>
 
@@ -150,7 +118,7 @@ export default function SignUp() {
                                 type="email"
                                 value={email}
                                 onChange={(e) => setEmail(e.target.value)}
-                                placeholder="name@company.com"
+                                placeholder="manager@company.com"
                                 required
                                 autoComplete="email"
                                 className="w-full bg-slate-950/70 border border-slate-800 rounded-lg pl-10 pr-4 py-2.5 text-sm text-slate-100 placeholder-slate-500 focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 transition-colors"
@@ -182,6 +150,11 @@ export default function SignUp() {
                                 type="button"
                                 onClick={() => setShowPassword(!showPassword)}
                                 tabIndex={-1}
+                                aria-label={
+                                    showPassword
+                                        ? 'Hide password'
+                                        : 'Show password'
+                                }
                                 className="absolute right-3 text-slate-500 hover:text-slate-300 transition-colors"
                             >
                                 {showPassword ? (
@@ -198,200 +171,39 @@ export default function SignUp() {
                     </div>
 
                     {/* Account type */}
-                    <div>
-                        <label className="block text-sm font-medium text-slate-300 mb-2">
+                    <div className="pt-2 border-t border-slate-800">
+
+                        <p className="text-sm font-medium text-slate-300 mb-3">
                             Account Type
-                        </label>
+                        </p>
 
-                        <div className="grid grid-cols-2 gap-3">
+                        <div className="p-4 rounded-xl border border-blue-500 bg-blue-500/10 ring-1 ring-blue-500">
+                            <div className="flex items-start gap-3">
 
-                            {/* Employee */}
-                            <button
-                                type="button"
-                                onClick={() => handleRoleChange('EMPLOYEE')}
-                                className={`p-4 rounded-xl border text-left transition-all ${
-    role === 'EMPLOYEE'
-        ? 'border-blue-500 bg-blue-500/10 ring-1 ring-blue-500'
-        : 'border-slate-800 bg-slate-950/50 hover:border-slate-700'
-}`}
-                            >
-                                <User
-                                    className={`w-5 h-5 mb-2 ${
-    role === 'EMPLOYEE'
-        ? 'text-blue-400'
-        : 'text-slate-500'
-}`}
-                                />
+                                <Briefcase className="w-5 h-5 mt-0.5 text-blue-400" />
 
-                                <p className="text-sm font-semibold text-white">
-                                    Employee
-                                </p>
-
-                                <p className="text-xs text-slate-500 mt-1">
-                                    View your equipment
-                                </p>
-                            </button>
-
-                            {/* Manager */}
-                            <button
-                                type="button"
-                                onClick={() => handleRoleChange('MANAGER')}
-                                className={`p-4 rounded-xl border text-left transition-all ${
-    role === 'MANAGER'
-        ? 'border-blue-500 bg-blue-500/10 ring-1 ring-blue-500'
-        : 'border-slate-800 bg-slate-950/50 hover:border-slate-700'
-}`}
-                            >
-                                <Briefcase
-                                    className={`w-5 h-5 mb-2 ${
-    role === 'MANAGER'
-        ? 'text-blue-400'
-        : 'text-slate-500'
-}`}
-                                />
-
-                                <p className="text-sm font-semibold text-white">
-                                    Manager
-                                </p>
-
-                                <p className="text-xs text-slate-500 mt-1">
-                                    Manage equipment & users
-                                </p>
-                            </button>
-
-                        </div>
-                    </div>
-
-                    {/* Employee information */}
-                    {role === 'EMPLOYEE' && (
-                        <div className="pt-2 border-t border-slate-800">
-
-                            <p className="text-sm font-medium text-slate-300 mb-4">
-                                Employee Information
-                            </p>
-
-                            <div className="space-y-4">
-
-                                {/* First Name + Last Name */}
-                                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-
-                                    {/* First name */}
-                                    <div>
-                                        <label className="block text-sm font-medium text-slate-300 mb-1.5">
-                                            First Name
-                                        </label>
-
-                                        <div className="relative flex items-center">
-                                            <User className="absolute left-3.5 w-4 h-4 text-slate-500 pointer-events-none" />
-
-                                            <input
-                                                type="text"
-                                                value={firstName}
-                                                onChange={(e) => setFirstName(e.target.value)}
-                                                placeholder="John"
-                                                required
-                                                className="w-full bg-slate-950/70 border border-slate-800 rounded-lg pl-10 pr-3 py-2.5 text-sm text-slate-100 placeholder-slate-500 focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 transition-colors"
-                                            />
-                                        </div>
-                                    </div>
-
-                                    {/* Last name */}
-                                    <div>
-                                        <label className="block text-sm font-medium text-slate-300 mb-1.5">
-                                            Last Name
-                                        </label>
-
-                                        <div className="relative flex items-center">
-                                            <User className="absolute left-3.5 w-4 h-4 text-slate-500 pointer-events-none" />
-
-                                            <input
-                                                type="text"
-                                                value={lastName}
-                                                onChange={(e) => setLastName(e.target.value)}
-                                                placeholder="Doe"
-                                                required
-                                                className="w-full bg-slate-950/70 border border-slate-800 rounded-lg pl-10 pr-3 py-2.5 text-sm text-slate-100 placeholder-slate-500 focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 transition-colors"
-                                            />
-                                        </div>
-                                    </div>
-
-                                </div>
-
-                                {/* Department + Position */}
-                                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-
-                                    {/* Department */}
-                                    <div>
-                                        <label className="block text-sm font-medium text-slate-300 mb-1.5">
-                                            Department
-                                        </label>
-
-                                        <div className="relative flex items-center">
-                                            <Building2 className="absolute left-3.5 w-4 h-4 text-slate-500 pointer-events-none" />
-
-                                            <input
-                                                type="text"
-                                                value={department}
-                                                onChange={(e) => setDepartment(e.target.value)}
-                                                placeholder="IT"
-                                                required
-                                                className="w-full bg-slate-950/70 border border-slate-800 rounded-lg pl-10 pr-3 py-2.5 text-sm text-slate-100 placeholder-slate-500 focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 transition-colors"
-                                            />
-                                        </div>
-                                    </div>
-
-                                    {/* Position */}
-                                    <div>
-                                        <label className="block text-sm font-medium text-slate-300 mb-1.5">
-                                            Position
-                                        </label>
-
-                                        <div className="relative flex items-center">
-                                            <Briefcase className="absolute left-3.5 w-4 h-4 text-slate-500 pointer-events-none" />
-
-                                            <input
-                                                type="text"
-                                                value={position}
-                                                onChange={(e) => setPosition(e.target.value)}
-                                                placeholder="Software Developer"
-                                                required
-                                                className="w-full bg-slate-950/70 border border-slate-800 rounded-lg pl-10 pr-3 py-2.5 text-sm text-slate-100 placeholder-slate-500 focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 transition-colors"
-                                            />
-                                        </div>
-                                    </div>
-
-                                </div>
-
-                                {/* Hire Date */}
                                 <div>
-                                    <label className="block text-sm font-medium text-slate-300 mb-1.5">
-                                        Hire Date
-                                    </label>
+                                    <p className="text-sm font-semibold text-white">
+                                        Manager
+                                    </p>
 
-                                    <div className="relative flex items-center">
-                                        <Calendar className="absolute left-3.5 w-4 h-4 text-slate-500 pointer-events-none" />
-
-                                        <input
-                                            type="date"
-                                            value={hireDate}
-                                            onChange={(e) => setHireDate(e.target.value)}
-                                            required
-                                            className="w-full bg-slate-950/70 border border-slate-800 rounded-lg pl-10 pr-4 py-2.5 text-sm text-slate-100 focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 transition-colors"
-                                        />
-                                    </div>
+                                    <p className="text-xs text-slate-500 mt-1">
+                                        Manage employees and equipment
+                                    </p>
                                 </div>
 
                             </div>
                         </div>
-                    )}
 
-                    {/* Selected role */}
-                    <div className="text-center text-xs text-slate-500">
-                        Selected account type:{' '}
+                    </div>
 
-                        <span className="text-blue-400 font-medium">
-                            {role === 'MANAGER' ? 'Manager' : 'Employee'}
-                        </span>
+                    {/* Employee information notice */}
+                    <div className="bg-slate-950/50 border border-slate-800 rounded-lg p-3">
+                        <p className="text-sm text-slate-400">
+                            Employee accounts cannot be created through signup.
+                            A manager creates an employee account from the
+                            Employee Management section.
+                        </p>
                     </div>
 
                     {/* Submit */}
@@ -407,7 +219,7 @@ export default function SignUp() {
                             </>
                         ) : (
                             <>
-                                <span>Create Account</span>
+                                <span>Create Manager Account</span>
                                 <ArrowRight className="w-4 h-4" />
                             </>
                         )}
