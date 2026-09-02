@@ -9,7 +9,6 @@ import {
     AlertCircle,
     Loader2,
     ArrowRight,
-    User,
     Briefcase
 } from 'lucide-react';
 import api from '../api/axios';
@@ -21,8 +20,6 @@ export default function SignUp() {
     const [password, setPassword] = useState('');
     const [showPassword, setShowPassword] = useState(false);
 
-    const [role, setRole] = useState('EMPLOYEE');
-
     const [error, setError] = useState('');
     const [loading, setLoading] = useState(false);
 
@@ -33,17 +30,18 @@ export default function SignUp() {
         setLoading(true);
 
         try {
-            console.log('SIGNUP DATA:', {
+            const signupData = {
                 email,
                 password,
-                role
-            });
+                role: 'MANAGER'
+            };
 
-            const response = await api.post('/auth/signup', {
-                email,
-                password,
-                role
-            });
+            console.log('SIGNUP DATA:', signupData);
+
+            const response = await api.post(
+                '/auth/signup',
+                signupData
+            );
 
             console.log('SIGNUP SUCCESS:', response.data);
 
@@ -52,13 +50,15 @@ export default function SignUp() {
             });
 
         } catch (err) {
-            console.error('SIGNUP ERROR:', err.response || err);
+            console.error(
+                'SIGNUP ERROR:',
+                err.response || err
+            );
 
             setError(
                 err.response?.data?.message ||
                 err.response?.data?.error ||
-                err.message ||
-                'Failed to create account.'
+                'Failed to create manager account.'
             );
         } finally {
             setLoading(false);
@@ -68,10 +68,12 @@ export default function SignUp() {
     return (
         <div className="relative min-h-screen w-full overflow-hidden bg-slate-950 flex items-center justify-center p-4 sm:p-6 lg:p-8">
 
+            {/* Background effects */}
             <div className="absolute -top-32 left-1/2 -translate-x-1/2 w-full max-w-2xl h-96 bg-blue-600/15 blur-[120px] pointer-events-none rounded-full" />
 
             <div className="absolute -bottom-32 right-10 w-96 h-96 bg-indigo-600/10 blur-[120px] pointer-events-none rounded-full" />
 
+            {/* Signup card */}
             <div className="relative z-10 w-full max-w-md bg-slate-900/80 backdrop-blur-xl border border-slate-800/80 rounded-2xl p-6 sm:p-8 shadow-2xl text-slate-100">
 
                 {/* Header */}
@@ -82,23 +84,28 @@ export default function SignUp() {
                     </div>
 
                     <h2 className="text-2xl font-bold tracking-tight text-white sm:text-3xl">
-                        Create Account
+                        Create Manager Account
                     </h2>
 
                     <p className="mt-1.5 text-sm text-slate-400">
-                        Join the Equipment Tracker
+                        Create an administrator account for the Equipment Tracker
                     </p>
                 </div>
 
+                {/* Error message */}
                 {error && (
                     <div className="mb-6 flex items-start gap-2.5 bg-red-500/10 border border-red-500/30 text-red-300 p-3 rounded-lg text-sm">
                         <AlertCircle className="w-4 h-4 shrink-0 mt-0.5" />
-                        <span>{error}</span>
+
+                        <span>
+                            {error}
+                        </span>
                     </div>
                 )}
 
                 <form onSubmit={handleSubmit} className="space-y-5">
 
+                    {/* Email */}
                     <div>
                         <label className="block text-sm font-medium text-slate-300 mb-1.5">
                             Email Address
@@ -111,13 +118,15 @@ export default function SignUp() {
                                 type="email"
                                 value={email}
                                 onChange={(e) => setEmail(e.target.value)}
-                                placeholder="name@company.com"
+                                placeholder="manager@company.com"
                                 required
+                                autoComplete="email"
                                 className="w-full bg-slate-950/70 border border-slate-800 rounded-lg pl-10 pr-4 py-2.5 text-sm text-slate-100 placeholder-slate-500 focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 transition-colors"
                             />
                         </div>
                     </div>
 
+                    {/* Password */}
                     <div>
                         <label className="block text-sm font-medium text-slate-300 mb-1.5">
                             Password
@@ -133,6 +142,7 @@ export default function SignUp() {
                                 placeholder="••••••••"
                                 required
                                 minLength={6}
+                                autoComplete="new-password"
                                 className="w-full bg-slate-950/70 border border-slate-800 rounded-lg pl-10 pr-10 py-2.5 text-sm text-slate-100 placeholder-slate-500 focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 transition-colors"
                             />
 
@@ -140,6 +150,11 @@ export default function SignUp() {
                                 type="button"
                                 onClick={() => setShowPassword(!showPassword)}
                                 tabIndex={-1}
+                                aria-label={
+                                    showPassword
+                                        ? 'Hide password'
+                                        : 'Show password'
+                                }
                                 className="absolute right-3 text-slate-500 hover:text-slate-300 transition-colors"
                             >
                                 {showPassword ? (
@@ -149,77 +164,49 @@ export default function SignUp() {
                                 )}
                             </button>
                         </div>
+
+                        <p className="mt-1.5 text-xs text-slate-500">
+                            Password must contain at least 6 characters.
+                        </p>
                     </div>
 
-                    <div>
-                        <label className="block text-sm font-medium text-slate-300 mb-2">
+                    {/* Account type */}
+                    <div className="pt-2 border-t border-slate-800">
+
+                        <p className="text-sm font-medium text-slate-300 mb-3">
                             Account Type
-                        </label>
+                        </p>
 
-                        <div className="grid grid-cols-2 gap-3">
+                        <div className="p-4 rounded-xl border border-blue-500 bg-blue-500/10 ring-1 ring-blue-500">
+                            <div className="flex items-start gap-3">
 
-                            <button
-                                type="button"
-                                onClick={() => setRole('EMPLOYEE')}
-                                className={`p-4 rounded-xl border text-left transition-all ${
-    role === 'EMPLOYEE'
-        ? 'border-blue-500 bg-blue-500/10 ring-1 ring-blue-500'
-        : 'border-slate-800 bg-slate-950/50 hover:border-slate-700'
-}`}
-                            >
-                                <User
-                                    className={`w-5 h-5 mb-2 ${
-    role === 'EMPLOYEE'
-        ? 'text-blue-400'
-        : 'text-slate-500'
-}`}
-                                />
+                                <Briefcase className="w-5 h-5 mt-0.5 text-blue-400" />
 
-                                <p className="text-sm font-semibold text-white">
-                                    Employee
-                                </p>
+                                <div>
+                                    <p className="text-sm font-semibold text-white">
+                                        Manager
+                                    </p>
 
-                                <p className="text-xs text-slate-500 mt-1">
-                                    View your equipment
-                                </p>
-                            </button>
+                                    <p className="text-xs text-slate-500 mt-1">
+                                        Manage employees and equipment
+                                    </p>
+                                </div>
 
-                            <button
-                                type="button"
-                                onClick={() => setRole('MANAGER')}
-                                className={`p-4 rounded-xl border text-left transition-all ${
-    role === 'MANAGER'
-        ? 'border-blue-500 bg-blue-500/10 ring-1 ring-blue-500'
-        : 'border-slate-800 bg-slate-950/50 hover:border-slate-700'
-}`}
-                            >
-                                <Briefcase
-                                    className={`w-5 h-5 mb-2 ${
-    role === 'MANAGER'
-        ? 'text-blue-400'
-        : 'text-slate-500'
-}`}
-                                />
-
-                                <p className="text-sm font-semibold text-white">
-                                    Manager
-                                </p>
-
-                                <p className="text-xs text-slate-500 mt-1">
-                                    Manage equipment & users
-                                </p>
-                            </button>
-
+                            </div>
                         </div>
+
                     </div>
 
-                    <div className="text-center text-xs text-slate-500">
-                        Selected account type:{' '}
-                        <span className="text-blue-400 font-medium">
-                            {role === 'MANAGER' ? 'Manager' : 'Employee'}
-                        </span>
+                    {/* Employee information notice */}
+                    <div className="bg-slate-950/50 border border-slate-800 rounded-lg p-3">
+                        <p className="text-sm text-slate-400">
+                            Employee accounts cannot be created through signup.
+                            A manager creates an employee account from the
+                            Employee Management section.
+                        </p>
                     </div>
 
+                    {/* Submit */}
                     <button
                         type="submit"
                         disabled={loading}
@@ -232,7 +219,7 @@ export default function SignUp() {
                             </>
                         ) : (
                             <>
-                                <span>Create Account</span>
+                                <span>Create Manager Account</span>
                                 <ArrowRight className="w-4 h-4" />
                             </>
                         )}
@@ -240,6 +227,7 @@ export default function SignUp() {
 
                 </form>
 
+                {/* Login link */}
                 <div className="mt-6 text-center">
                     <p className="text-sm text-slate-500">
                         Already have an account?{' '}

@@ -3,8 +3,6 @@ import {
     Package,
     Users,
     CheckCircle2,
-    Clock,
-    XCircle,
     Plus,
     Search,
     Filter,
@@ -22,7 +20,9 @@ import {
     AlertTriangle,
     BarChart3,
     TrendingUp,
-    CalendarDays
+    CalendarDays,
+    Lock,
+    EyeOff
 } from 'lucide-react';
 
 import api from '../api/axios.js';
@@ -58,6 +58,8 @@ export default function Dashboard() {
 
     const [isEmployeeModalOpen, setIsEmployeeModalOpen] = useState(false);
     const [selectedEmployee, setSelectedEmployee] = useState(null);
+    const [employeeSaving, setEmployeeSaving] = useState(false);
+    const [showEmployeePassword, setShowEmployeePassword] = useState(false);
 
     const [isEmployeeEquipmentModalOpen, setIsEmployeeEquipmentModalOpen] =
         useState(false);
@@ -73,7 +75,8 @@ export default function Dashboard() {
         hireDate: new Date().toISOString().split('T')[0],
         department: '',
         position: '',
-        active: true
+        active: true,
+        password: ''
     });
 
     const { logout, user } = useAuth();
@@ -246,6 +249,7 @@ export default function Dashboard() {
             setAssignSubmitting(false);
         }
     };
+
     const handleReturnEquipment = async (item) => {
         if (
             !window.confirm(
@@ -256,7 +260,6 @@ export default function Dashboard() {
         }
 
         try {
-
             if (!item.assignmentId) {
                 alert(
                     'This equipment does not contain an assignment ID.'
@@ -269,9 +272,7 @@ export default function Dashboard() {
             );
 
             await refreshDashboard();
-
         } catch (err) {
-
             console.error('Failed to return equipment:', err);
 
             const msg =
@@ -283,8 +284,8 @@ export default function Dashboard() {
     };
 
     const handleOpenAddEmployee = () => {
-
         setSelectedEmployee(null);
+        setShowEmployeePassword(false);
 
         setEmployeeFormData({
             firstName: '',
@@ -293,15 +294,16 @@ export default function Dashboard() {
             hireDate: new Date().toISOString().split('T')[0],
             department: '',
             position: '',
-            active: true
+            active: true,
+            password: ''
         });
 
         setIsEmployeeModalOpen(true);
     };
 
     const handleOpenEditEmployee = (emp) => {
-
         setSelectedEmployee(emp);
+        setShowEmployeePassword(false);
 
         setEmployeeFormData({
             firstName: emp.firstName || '',
@@ -312,71 +314,112 @@ export default function Dashboard() {
                 : '',
             department: emp.department || '',
             position: emp.position || '',
-            active: emp.active ?? true
+            active: emp.active ?? true,
+            password: ''
         });
 
         setIsEmployeeModalOpen(true);
     };
 
-    const handleOpenEmployeeEquipment = (employee) => {
+    const handleCloseEmployeeModal = () => {
+        if (employeeSaving) {
+            return;
+        }
 
+        setIsEmployeeModalOpen(false);
+        setSelectedEmployee(null);
+        setShowEmployeePassword(false);
+    };
+
+    const handleOpenEmployeeEquipment = (employee) => {
         setSelectedEmployee(employee);
         setIsEmployeeEquipmentModalOpen(true);
     };
 
     const handleEmployeeSubmit = async (e) => {
-
         e.preventDefault();
 
-        try {
+        setEmployeeSaving(true);
 
+        try {
             if (selectedEmployee) {
+
+                const updateData = {
+                    firstName: employeeFormData.firstName,
+                    lastName: employeeFormData.lastName,
+                    email: employeeFormData.email,
+                    hireDate: employeeFormData.hireDate,
+                    department: employeeFormData.department,
+                    position: employeeFormData.position,
+                    active: employeeFormData.active
+                };
 
                 await api.put(
                     `/employees/${selectedEmployee.id}`,
-                    employeeFormData
+                    updateData
                 );
 
             } else {
 
+                const createData = {
+                    firstName: employeeFormData.firstName,
+                    lastName: employeeFormData.lastName,
+                    email: employeeFormData.email,
+                    hireDate: employeeFormData.hireDate,
+                    department: employeeFormData.department,
+                    position: employeeFormData.position,
+                    password: employeeFormData.password
+                };
+
                 await api.post(
                     '/employees',
-                    employeeFormData
+                    createData
                 );
             }
 
             setIsEmployeeModalOpen(false);
+            setSelectedEmployee(null);
+            setShowEmployeePassword(false);
 
             await fetchEmployees();
 
         } catch (err) {
+            console.error('Failed to save employee:', err);
 
             const message =
                 err.response?.data?.message ||
+                err.response?.data?.error ||
+                err.response?.data ||
                 'Failed to save employee.';
 
-            alert(message);
+            alert(
+                typeof message === 'string'
+                    ? message
+                    : JSON.stringify(message)
+            );
+        } finally {
+            setEmployeeSaving(false);
         }
     };
 
     const handleDeleteEmployee = async (id, fullName) => {
-
         if (
             !window.confirm(
-                `Are you sure you want to offboard/delete ${fullName}?`
+                `Are you sure you want to offboard/delete ${fullName}?\n\n` +
+                'The system will block this if they still hold active equipment.'
             )
         ) {
             return;
         }
 
         try {
-
             await api.delete(`/employees/${id}`);
 
             await fetchEmployees();
+            await fetchEquipment();
+            await fetchOutstandingEquipment();
 
         } catch (err) {
-
             const msg =
                 err.response?.data?.message ||
                 'Cannot delete employee with active equipment assignments.';
@@ -421,7 +464,6 @@ export default function Dashboard() {
     ).length;
 
     const filteredEquipment = safeEquipment.filter((item) => {
-
         const name =
             item.equipmentName ||
             item.name ||
@@ -452,7 +494,6 @@ export default function Dashboard() {
     });
 
     const filteredEmployees = safeEmployees.filter((emp) => {
-
         const fullName =
             `${emp.firstName || ''} ${emp.lastName || ''}`
                 .toLowerCase();
@@ -506,7 +547,6 @@ export default function Dashboard() {
                         </div>
 
                         <div>
-
                             <h1 className="text-lg font-bold text-white tracking-wide">
                                 Equipment Tracker
                             </h1>
@@ -514,7 +554,6 @@ export default function Dashboard() {
                             <p className="text-xs text-slate-400">
                                 Inventory & Personnel Portal
                             </p>
-
                         </div>
 
                     </div>
@@ -580,7 +619,6 @@ export default function Dashboard() {
 
             </header>
 
-
             <main className="flex-1 max-w-7xl w-full mx-auto p-4 sm:p-6 lg:p-8 space-y-6">
 
                 {activeTab === 'overview' && (
@@ -595,7 +633,6 @@ export default function Dashboard() {
                                 Monitor your equipment inventory and employee assignments.
                             </p>
                         </div>
-
 
                         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
 
@@ -623,7 +660,7 @@ export default function Dashboard() {
                             <StatCard
                                 title="Retired"
                                 value={retiredCount}
-                                icon={<XCircle className="w-6 h-6" />}
+                                icon={<XIcon className="w-6 h-6" />}
                                 description="No longer in service"
                             />
 
@@ -676,10 +713,7 @@ export default function Dashboard() {
 
                         </div>
 
-
                         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-
-                            {/* EQUIPMENT STATUS */}
 
                             <div className="bg-slate-900/80 border border-slate-800 rounded-xl p-6">
 
@@ -732,7 +766,6 @@ export default function Dashboard() {
                                 </div>
 
                             </div>
-
 
                             <div className="bg-slate-900/80 border border-slate-800 rounded-xl p-6">
 
@@ -853,7 +886,6 @@ export default function Dashboard() {
 
                     </>
                 )}
-
 
                 {activeTab === 'equipment' && (
                     <>
@@ -1514,6 +1546,7 @@ export default function Dashboard() {
                 )}
 
             </main>
+
             {isEquipmentModalOpen && (
                 <EquipmentModal
                     equipment={selectedEquipment}
@@ -1675,17 +1708,25 @@ export default function Dashboard() {
 
                         <div className="px-6 py-4 border-b border-slate-800 flex items-center justify-between">
 
-                            <h2 className="font-bold text-white">
-                                {selectedEmployee
-                                    ? 'Edit Employee'
-                                    : 'Add Employee'}
-                            </h2>
+                            <div>
+                                <h2 className="font-bold text-white">
+                                    {selectedEmployee
+                                        ? 'Edit Employee'
+                                        : 'Add Employee'}
+                                </h2>
+
+                                {!selectedEmployee && (
+                                    <p className="text-xs text-slate-500 mt-1">
+                                        Creates the employee and their login account.
+                                    </p>
+                                )}
+                            </div>
 
                             <button
-                                onClick={() =>
-                                    setIsEmployeeModalOpen(false)
-                                }
-                                className="text-slate-400 hover:text-white"
+                                type="button"
+                                onClick={handleCloseEmployeeModal}
+                                disabled={employeeSaving}
+                                className="text-slate-400 hover:text-white disabled:opacity-50"
                             >
                                 <X className="w-5 h-5" />
                             </button>
@@ -1703,6 +1744,7 @@ export default function Dashboard() {
                                     label="First Name"
                                     value={employeeFormData.firstName}
                                     required
+                                    maxLength={50}
                                     onChange={(value) =>
                                         setEmployeeFormData({
                                             ...employeeFormData,
@@ -1715,6 +1757,7 @@ export default function Dashboard() {
                                     label="Last Name"
                                     value={employeeFormData.lastName}
                                     required
+                                    maxLength={50}
                                     onChange={(value) =>
                                         setEmployeeFormData({
                                             ...employeeFormData,
@@ -1738,11 +1781,77 @@ export default function Dashboard() {
                                 }
                             />
 
+                            {!selectedEmployee && (
+
+                                <div>
+
+                                    <label className="block text-xs font-semibold uppercase text-slate-400 mb-2">
+                                        Login Password *
+                                    </label>
+
+                                    <div className="relative">
+
+                                        <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-500 pointer-events-none" />
+
+                                        <input
+                                            type={
+                                                showEmployeePassword
+                                                    ? 'text'
+                                                    : 'password'
+                                            }
+                                            required
+                                            minLength={6}
+                                            maxLength={100}
+                                            value={employeeFormData.password}
+                                            onChange={(e) =>
+                                                setEmployeeFormData({
+                                                    ...employeeFormData,
+                                                    password: e.target.value
+                                                })
+                                            }
+                                            placeholder="At least 6 characters"
+                                            autoComplete="new-password"
+                                            className="w-full bg-slate-950 border border-slate-800 rounded-lg pl-10 pr-10 py-2.5 text-sm text-white placeholder-slate-500 focus:outline-none focus:border-blue-500"
+                                        />
+
+                                        <button
+                                            type="button"
+                                            onClick={() =>
+                                                setShowEmployeePassword(
+                                                    !showEmployeePassword
+                                                )
+                                            }
+                                            className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-500 hover:text-slate-300"
+                                            tabIndex={-1}
+                                            aria-label={
+                                                showEmployeePassword
+                                                    ? 'Hide password'
+                                                    : 'Show password'
+                                            }
+                                        >
+                                            {showEmployeePassword ? (
+                                                <EyeOff className="w-4 h-4" />
+                                            ) : (
+                                                <Eye className="w-4 h-4" />
+                                            )}
+                                        </button>
+
+                                    </div>
+
+                                    <p className="mt-1.5 text-xs text-slate-500">
+                                        The employee will use this password to log in.
+                                    </p>
+
+                                </div>
+
+                            )}
+
                             <div className="grid grid-cols-2 gap-4">
 
                                 <FormInput
                                     label="Department"
                                     value={employeeFormData.department}
+                                    maxLength={100}
                                     onChange={(value) =>
                                         setEmployeeFormData({
                                             ...employeeFormData,
@@ -1754,6 +1863,7 @@ export default function Dashboard() {
                                 <FormInput
                                     label="Position"
                                     value={employeeFormData.position}
+                                    maxLength={100}
                                     onChange={(value) =>
                                         setEmployeeFormData({
                                             ...employeeFormData,
@@ -1818,19 +1928,27 @@ export default function Dashboard() {
 
                                 <button
                                     type="button"
-                                    onClick={() =>
-                                        setIsEmployeeModalOpen(false)
-                                    }
-                                    className="px-4 py-2 text-sm text-slate-400 hover:bg-slate-800 rounded-lg"
+                                    onClick={handleCloseEmployeeModal}
+                                    disabled={employeeSaving}
+                                    className="px-4 py-2 text-sm text-slate-400 hover:bg-slate-800 rounded-lg disabled:opacity-50"
                                 >
                                     Cancel
                                 </button>
 
                                 <button
                                     type="submit"
-                                    className="px-4 py-2 bg-blue-600 hover:bg-blue-500 text-white rounded-lg text-sm font-medium"
+                                    disabled={employeeSaving}
+                                    className="px-4 py-2 bg-blue-600 hover:bg-blue-500 disabled:opacity-50 text-white rounded-lg text-sm font-medium flex items-center gap-2"
                                 >
-                                    Save Employee
+
+                                    {employeeSaving && (
+                                        <Loader2 className="w-4 h-4 animate-spin" />
+                                    )}
+
+                                    {selectedEmployee
+                                        ? 'Save Changes'
+                                        : 'Create Employee'}
+
                                 </button>
 
                             </div>
@@ -1880,7 +1998,6 @@ function NavButton({
     );
 }
 
-
 function StatCard({
                       title,
                       value,
@@ -1917,7 +2034,6 @@ function StatCard({
         </div>
     );
 }
-
 
 function PageHeader({
                         title,
@@ -1956,7 +2072,6 @@ function PageHeader({
     );
 }
 
-
 function QuickAction({
                          icon,
                          title,
@@ -1993,7 +2108,6 @@ function QuickAction({
     );
 }
 
-
 function LegendItem({
                         label,
                         value,
@@ -2013,7 +2127,6 @@ function LegendItem({
         </div>
     );
 }
-
 
 function StatusBadge({ status }) {
 
@@ -2046,7 +2159,6 @@ function StatusBadge({ status }) {
     );
 }
 
-
 function LoadingState({ text }) {
     return (
         <div className="flex items-center justify-center p-12 text-slate-400 gap-3">
@@ -2059,7 +2171,6 @@ function LoadingState({ text }) {
     );
 }
 
-
 function ErrorState({ text }) {
     return (
         <div className="p-10 text-center text-red-400 text-sm">
@@ -2067,7 +2178,6 @@ function ErrorState({ text }) {
         </div>
     );
 }
-
 
 function EmptyState({ text }) {
     return (
@@ -2077,24 +2187,26 @@ function EmptyState({ text }) {
     );
 }
 
-
 function FormInput({
                        label,
                        value,
                        onChange,
                        type = 'text',
-                       required = false
+                       required = false,
+                       maxLength
                    }) {
     return (
         <div>
 
             <label className="block text-xs font-semibold uppercase text-slate-400 mb-2">
                 {label}
+                {required && ' *'}
             </label>
 
             <input
                 type={type}
                 required={required}
+                maxLength={maxLength}
                 value={value}
                 onChange={(e) => onChange(e.target.value)}
                 className="w-full bg-slate-950 border border-slate-800 rounded-lg px-3 py-2.5 text-sm text-white focus:outline-none focus:border-blue-500"
@@ -2103,8 +2215,6 @@ function FormInput({
         </div>
     );
 }
-
-
 
 function EquipmentDonutChart({
                                  available,
@@ -2200,7 +2310,6 @@ function formatDate(value) {
         day: 'numeric'
     });
 }
-
 
 function getDuration(startDate) {
 

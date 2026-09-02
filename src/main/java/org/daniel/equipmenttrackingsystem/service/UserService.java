@@ -5,10 +5,7 @@ import org.daniel.equipmenttrackingsystem.dto.UserRequest;
 import org.daniel.equipmenttrackingsystem.dto.UserResponse;
 import org.daniel.equipmenttrackingsystem.exception.BusinessRuleException;
 import org.daniel.equipmenttrackingsystem.exception.ResourceNotFoundException;
-import org.daniel.equipmenttrackingsystem.model.Employee;
 import org.daniel.equipmenttrackingsystem.model.User;
-import org.daniel.equipmenttrackingsystem.repository.AssignmentRepository;
-import org.daniel.equipmenttrackingsystem.repository.EmployeeRepository;
 import org.daniel.equipmenttrackingsystem.repository.UserRepository;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.userdetails.UserDetails;
@@ -27,21 +24,15 @@ import java.util.stream.Collectors;
 public class UserService implements UserDetailsService {
 
     private final UserRepository userRepository;
-    private final EmployeeRepository employeeRepository;
-    private final AssignmentRepository assignmentRepository;
     private final PasswordEncoder passwordEncoder;
     private final JwtService jwtService;
 
     public UserService(
             UserRepository userRepository,
-            EmployeeRepository employeeRepository,
-            AssignmentRepository assignmentRepository,
             PasswordEncoder passwordEncoder,
             JwtService jwtService
     ) {
         this.userRepository = userRepository;
-        this.employeeRepository = employeeRepository;
-        this.assignmentRepository = assignmentRepository;
         this.passwordEncoder = passwordEncoder;
         this.jwtService = jwtService;
     }
@@ -55,34 +46,13 @@ public class UserService implements UserDetailsService {
             );
         }
 
-        if (userRequest.role().name().equals("EMPLOYEE")
-                && employeeRepository.existsByEmail(userRequest.email())) {
-
-            throw new BusinessRuleException(
-                    "Employee with email '" + userRequest.email() + "' already exists"
-            );
-        }
-
         User user = userRequest.toEntity();
 
-        if (user.getPassword() != null) {
-            user.setPassword(
-                    passwordEncoder.encode(user.getPassword())
-            );
-        }
+        user.setPassword(
+                passwordEncoder.encode(user.getPassword())
+        );
 
-        if (userRequest.role().name().equals("EMPLOYEE")) {
-
-            Employee employee = userRequest.toEmployeeEntity();
-
-            Employee savedEmployee =
-                    employeeRepository.save(employee);
-
-            user.setEmployee(savedEmployee);
-        }
-
-        User savedUser =
-                userRepository.save(user);
+        User savedUser = userRepository.save(user);
 
         UserDetails userDetails =
                 loadUserByUsername(savedUser.getEmail());
@@ -129,15 +99,24 @@ public class UserService implements UserDetailsService {
                         )
                 );
 
-        user.setEmail(userRequest.email());
+        String oldEmail = user.getEmail();
+        String newEmail = userRequest.email();
+
+        if (!oldEmail.equals(newEmail)
+                && userRepository.existsByEmail(newEmail)) {
+
+            throw new BusinessRuleException(
+                    "User with email '" + newEmail + "' already exists"
+            );
+        }
+
+        user.setEmail(newEmail);
 
         if (userRequest.password() != null
                 && !userRequest.password().isBlank()) {
 
             user.setPassword(
-                    passwordEncoder.encode(
-                            userRequest.password()
-                    )
+                    passwordEncoder.encode(userRequest.password())
             );
         }
 
@@ -147,6 +126,10 @@ public class UserService implements UserDetailsService {
 
         User updatedUser =
                 userRepository.save(user);
+
+        if (user.getEmployee() != null) {
+            user.getEmployee().setEmail(newEmail);
+        }
 
         return UserResponse.fromEntity(updatedUser);
     }
@@ -173,8 +156,7 @@ public class UserService implements UserDetailsService {
                 userRepository.findByEmail(email)
                         .orElseThrow(() ->
                                 new UsernameNotFoundException(
-                                        "User not found with email: "
-                                                + email
+                                        "User not found with email: " + email
                                 )
                         );
 
