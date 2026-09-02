@@ -3,11 +3,11 @@ package org.daniel.equipmenttrackingsystem.service;
 import org.daniel.equipmenttrackingsystem.config.JwtService;
 import org.daniel.equipmenttrackingsystem.dto.UserRequest;
 import org.daniel.equipmenttrackingsystem.dto.UserResponse;
+import org.daniel.equipmenttrackingsystem.enums.SignupRole;
 import org.daniel.equipmenttrackingsystem.exception.BusinessRuleException;
 import org.daniel.equipmenttrackingsystem.exception.ResourceNotFoundException;
 import org.daniel.equipmenttrackingsystem.model.Employee;
 import org.daniel.equipmenttrackingsystem.model.User;
-import org.daniel.equipmenttrackingsystem.repository.AssignmentRepository;
 import org.daniel.equipmenttrackingsystem.repository.EmployeeRepository;
 import org.daniel.equipmenttrackingsystem.repository.UserRepository;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
@@ -28,20 +28,17 @@ public class UserService implements UserDetailsService {
 
     private final UserRepository userRepository;
     private final EmployeeRepository employeeRepository;
-    private final AssignmentRepository assignmentRepository;
     private final PasswordEncoder passwordEncoder;
     private final JwtService jwtService;
 
     public UserService(
             UserRepository userRepository,
             EmployeeRepository employeeRepository,
-            AssignmentRepository assignmentRepository,
             PasswordEncoder passwordEncoder,
             JwtService jwtService
     ) {
         this.userRepository = userRepository;
         this.employeeRepository = employeeRepository;
-        this.assignmentRepository = assignmentRepository;
         this.passwordEncoder = passwordEncoder;
         this.jwtService = jwtService;
     }
@@ -55,23 +52,17 @@ public class UserService implements UserDetailsService {
             );
         }
 
-        if (userRequest.role().name().equals("EMPLOYEE")
-                && employeeRepository.existsByEmail(userRequest.email())) {
-
-            throw new BusinessRuleException(
-                    "Employee with email '" + userRequest.email() + "' already exists"
-            );
-        }
-
         User user = userRequest.toEntity();
 
-        if (user.getPassword() != null) {
-            user.setPassword(
-                    passwordEncoder.encode(user.getPassword())
-            );
-        }
+        if (userRequest.role() == SignupRole.EMPLOYEE) {
 
-        if (userRequest.role().name().equals("EMPLOYEE")) {
+            if (employeeRepository.existsByEmail(userRequest.email())) {
+                throw new BusinessRuleException(
+                        "Employee with email '" + userRequest.email() + "' already exists"
+                );
+            }
+
+            validateEmployeeData(userRequest);
 
             Employee employee = userRequest.toEmployeeEntity();
 
@@ -80,6 +71,10 @@ public class UserService implements UserDetailsService {
 
             user.setEmployee(savedEmployee);
         }
+
+        user.setPassword(
+                passwordEncoder.encode(user.getPassword())
+        );
 
         User savedUser =
                 userRepository.save(user);
@@ -94,6 +89,39 @@ public class UserService implements UserDetailsService {
                 savedUser,
                 token
         );
+    }
+
+    private void validateEmployeeData(UserRequest request) {
+
+        if (request.firstName() == null || request.firstName().isBlank()) {
+            throw new BusinessRuleException(
+                    "First name is required for employees"
+            );
+        }
+
+        if (request.lastName() == null || request.lastName().isBlank()) {
+            throw new BusinessRuleException(
+                    "Last name is required for employees"
+            );
+        }
+
+        if (request.department() == null || request.department().isBlank()) {
+            throw new BusinessRuleException(
+                    "Department is required for employees"
+            );
+        }
+
+        if (request.position() == null || request.position().isBlank()) {
+            throw new BusinessRuleException(
+                    "Position is required for employees"
+            );
+        }
+
+        if (request.hireDate() == null) {
+            throw new BusinessRuleException(
+                    "Hire date is required for employees"
+            );
+        }
     }
 
     @Transactional(readOnly = true)
@@ -135,9 +163,7 @@ public class UserService implements UserDetailsService {
                 && !userRequest.password().isBlank()) {
 
             user.setPassword(
-                    passwordEncoder.encode(
-                            userRequest.password()
-                    )
+                    passwordEncoder.encode(userRequest.password())
             );
         }
 
@@ -154,14 +180,14 @@ public class UserService implements UserDetailsService {
     @Transactional
     public void deleteUser(UUID id) {
 
-        User user = userRepository.findById(id)
+        userRepository.findById(id)
                 .orElseThrow(() ->
                         new ResourceNotFoundException(
                                 "User not found with ID: " + id
                         )
                 );
 
-        userRepository.delete(user);
+        userRepository.deleteById(id);
     }
 
     @Override
@@ -173,8 +199,7 @@ public class UserService implements UserDetailsService {
                 userRepository.findByEmail(email)
                         .orElseThrow(() ->
                                 new UsernameNotFoundException(
-                                        "User not found with email: "
-                                                + email
+                                        "User not found with email: " + email
                                 )
                         );
 
