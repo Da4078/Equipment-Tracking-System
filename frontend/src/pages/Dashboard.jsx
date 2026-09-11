@@ -140,7 +140,7 @@ export default function Dashboard() {
         setOutstandingError('');
 
         try {
-            const response = await api.get('/equipment/outstanding');
+            const response = await api.get('/equipment?filter=OUTSTANDING');
 
             const data = Array.isArray(response.data)
                 ? response.data

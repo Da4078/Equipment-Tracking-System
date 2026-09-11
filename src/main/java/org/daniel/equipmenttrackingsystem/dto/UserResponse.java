@@ -10,21 +10,8 @@ public record UserResponse(
         UUID id,
         UUID employeeId,
         String email,
-        Set<UserRole> roles,
-        String token
+        Set<UserRole> roles
 ) {
-
-    public static UserResponse fromEntity(User user, String token) {
-        return new UserResponse(
-                user.getId(),
-                user.getEmployee() != null
-                        ? user.getEmployee().getId()
-                        : null,
-                user.getEmail(),
-                user.getRoles(),
-                token
-        );
-    }
 
     public static UserResponse fromEntity(User user) {
         return new UserResponse(
@@ -33,8 +20,7 @@ public record UserResponse(
                         ? user.getEmployee().getId()
                         : null,
                 user.getEmail(),
-                user.getRoles(),
-                null
+                user.getRoles()
         );
     }
 }

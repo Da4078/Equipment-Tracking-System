@@ -12,7 +12,6 @@ const equipmentService = {
     update: (id, equipmentData) => api.put(`/equipment/${id}`, equipmentData),
     delete: (id) => api.delete(`/equipment/${id}`),
 
-    // Additional endpoints
     getAvailable: () => api.get('/equipment/available'),
     getOutstanding: () => api.get('/equipment/outstanding'),
     getByEmployee: (employeeId) => api.get(`/equipment/employee/${employeeId}`)

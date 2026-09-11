@@ -3,7 +3,6 @@ package org.daniel.equipmenttrackingsystem.controller;
 import jakarta.transaction.Transactional;
 import org.daniel.equipmenttrackingsystem.dto.UserRequest;
 import org.daniel.equipmenttrackingsystem.dto.UserResponse;
-import org.daniel.equipmenttrackingsystem.enums.SignupRole;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;

@@ -1,19 +1,21 @@
 package org.daniel.equipmenttrackingsystem.service;
 
+import org.daniel.equipmenttrackingsystem.config.KeycloakAdminService;
 import org.daniel.equipmenttrackingsystem.dto.CreateEmployeeRequest;
 import org.daniel.equipmenttrackingsystem.dto.EmployeeRequest;
 import org.daniel.equipmenttrackingsystem.dto.EmployeeResponse;
+import org.daniel.equipmenttrackingsystem.dto.UserRequest;
+import org.daniel.equipmenttrackingsystem.enums.UserRole;
 import org.daniel.equipmenttrackingsystem.exception.BusinessRuleException;
 import org.daniel.equipmenttrackingsystem.exception.ResourceNotFoundException;
 import org.daniel.equipmenttrackingsystem.model.Employee;
 import org.daniel.equipmenttrackingsystem.model.User;
-import org.daniel.equipmenttrackingsystem.enums.UserRole;
 import org.daniel.equipmenttrackingsystem.repository.AssignmentRepository;
 import org.daniel.equipmenttrackingsystem.repository.EmployeeRepository;
 import org.daniel.equipmenttrackingsystem.repository.UserRepository;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
-import org.springframework.security.crypto.password.PasswordEncoder;
+import org.springframework.security.oauth2.jwt.Jwt;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -26,29 +28,26 @@ public class EmployeeService {
     private final EmployeeRepository employeeRepository;
     private final AssignmentRepository assignmentRepository;
     private final UserRepository userRepository;
-    private final PasswordEncoder passwordEncoder;
+    private final KeycloakAdminService keycloakAdminService;
 
     public EmployeeService(EmployeeRepository employeeRepository,
                            AssignmentRepository assignmentRepository,
                            UserRepository userRepository,
-                           PasswordEncoder passwordEncoder) {
+                           KeycloakAdminService keycloakAdminService) {
         this.employeeRepository = employeeRepository;
         this.assignmentRepository = assignmentRepository;
         this.userRepository = userRepository;
-        this.passwordEncoder = passwordEncoder;
+        this.keycloakAdminService = keycloakAdminService;
     }
 
     @Transactional
     public EmployeeResponse createEmployee(CreateEmployeeRequest request) {
 
-        // Check employee email
         if (employeeRepository.existsByEmail(request.email())) {
             throw new BusinessRuleException(
                     "Employee with email '" + request.email() + "' already exists"
             );
         }
-
-        // Check user email
         if (userRepository.existsByEmail(request.email())) {
             throw new BusinessRuleException(
                     "User with email '" + request.email() + "' already exists"
@@ -71,7 +70,6 @@ public class EmployeeService {
         User user = new User();
 
         user.setEmail(request.email());
-        user.setPassword(passwordEncoder.encode(request.password()));
 
         user.setRoles(Set.of(UserRole.ROLE_EMPLOYEE));
 
@@ -79,7 +77,27 @@ public class EmployeeService {
 
         userRepository.save(user);
 
+        keycloakAdminService.createEmployeeUser(new UserRequest(request.email(), request.password()));
+
         return EmployeeResponse.fromEntity(savedEmployee);
+    }
+
+    @Transactional(readOnly = true)
+    public EmployeeResponse getCurrentEmployee(Jwt jwt) {
+        String email = jwt.getClaimAsString("email");
+        if (email == null) {
+            email = jwt.getClaimAsString("preferred_username");
+        }
+
+        String targetEmail = email;
+
+        return employeeRepository.findByEmail(targetEmail)
+                .map(EmployeeResponse::fromEntity)
+                .orElseThrow(() ->
+                        new ResourceNotFoundException(
+                                "No employee account is associated with this user (" + targetEmail + ")"
+                        )
+                );
     }
 
     @Transactional(readOnly = true)
@@ -165,6 +183,8 @@ public class EmployeeService {
                     "Cannot delete employee with active equipment assignments"
             );
         }
+
+        keycloakAdminService.deleteUserByEmail(employee.getEmail());
 
         userRepository.findByEmail(employee.getEmail())
                 .ifPresent(userRepository::delete);
