@@ -7,6 +7,8 @@ import org.daniel.equipmenttrackingsystem.service.UserService;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
+import org.springframework.security.oauth2.jwt.Jwt;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -21,21 +23,44 @@ public class UserController {
     public UserController(UserService userService) {
         this.userService = userService;
     }
+
+    @GetMapping("/me")
+    public ResponseEntity<UserResponse> me(@AuthenticationPrincipal Jwt jwt) {
+
+        String email = jwt.getClaimAsString("email");
+
+        if (email == null) {
+            return ResponseEntity.notFound().build();
+        }
+
+        return userService.getUserByEmail(email)
+                .map(ResponseEntity::ok)
+                .orElse(ResponseEntity.notFound().build());
+    }
+
     @PostMapping
     @PreAuthorize("hasRole('ADMIN')")
-    public ResponseEntity<UserResponse> createUser(@Valid @RequestBody UserRequest userRequest) {
+    public ResponseEntity<UserResponse> createUser(
+            @Valid @RequestBody UserRequest userRequest
+    ) {
         return ResponseEntity.status(HttpStatus.CREATED)
                 .body(userService.createUser(userRequest));
     }
 
     @GetMapping("/{identifier}")
     @PreAuthorize("hasRole('ADMIN')")
-    public ResponseEntity<UserResponse> getUserById(@PathVariable String identifier) {
-        try{
+    public ResponseEntity<UserResponse> getUserById(
+            @PathVariable String identifier
+    ) {
+        try {
             UUID id = UUID.fromString(identifier);
-            return userService.getUserById(id).map(ResponseEntity::ok).orElse(ResponseEntity.notFound().build());
-        } catch (IllegalArgumentException e){
-            return userService.getUserByEmail(identifier).map(ResponseEntity::ok).orElse(ResponseEntity.notFound().build());
+            return userService.getUserById(id)
+                    .map(ResponseEntity::ok)
+                    .orElse(ResponseEntity.notFound().build());
+        } catch (IllegalArgumentException e) {
+            return userService.getUserByEmail(identifier)
+                    .map(ResponseEntity::ok)
+                    .orElse(ResponseEntity.notFound().build());
         }
     }
 
@@ -47,8 +72,10 @@ public class UserController {
 
     @PutMapping("/{id}")
     @PreAuthorize("hasRole('ADMIN')")
-    public ResponseEntity<UserResponse> updateUser(@PathVariable UUID id,
-                                                   @Valid @RequestBody UserRequest userRequest) {
+    public ResponseEntity<UserResponse> updateUser(
+            @PathVariable UUID id,
+            @Valid @RequestBody UserRequest userRequest
+    ) {
         return ResponseEntity.ok(userService.updateUser(id, userRequest));
     }
 

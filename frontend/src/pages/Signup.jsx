@@ -1,5 +1,4 @@
 import { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
 import {
     Mail,
     Lock,
@@ -12,9 +11,10 @@ import {
     Briefcase
 } from 'lucide-react';
 import api from '../api/axios';
+import { useAuth } from '../context/AuthContext';
 
 export default function SignUp() {
-    const navigate = useNavigate();
+    const { login } = useAuth();
 
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
@@ -33,7 +33,6 @@ export default function SignUp() {
             const signupData = {
                 email,
                 password,
-                role: 'MANAGER'
             };
 
             console.log('SIGNUP DATA:', signupData);
@@ -45,9 +44,7 @@ export default function SignUp() {
 
             console.log('SIGNUP SUCCESS:', response.data);
 
-            navigate('/login', {
-                replace: true
-            });
+            await login();
 
         } catch (err) {
             console.error(
@@ -58,7 +55,7 @@ export default function SignUp() {
             setError(
                 err.response?.data?.message ||
                 err.response?.data?.error ||
-                'Failed to create manager account.'
+                'Failed to create an account.'
             );
         } finally {
             setLoading(false);
@@ -84,7 +81,7 @@ export default function SignUp() {
                     </div>
 
                     <h2 className="text-2xl font-bold tracking-tight text-white sm:text-3xl">
-                        Create Manager Account
+                        Create Account
                     </h2>
 
                     <p className="mt-1.5 text-sm text-slate-400">
@@ -219,7 +216,7 @@ export default function SignUp() {
                             </>
                         ) : (
                             <>
-                                <span>Create Manager Account</span>
+                                <span>Create an Account</span>
                                 <ArrowRight className="w-4 h-4" />
                             </>
                         )}
@@ -234,7 +231,7 @@ export default function SignUp() {
 
                         <button
                             type="button"
-                            onClick={() => navigate('/login')}
+                            onClick={login}
                             className="text-blue-400 hover:text-blue-300 font-medium transition-colors"
                         >
                             Log in

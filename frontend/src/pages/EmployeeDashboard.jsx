@@ -19,69 +19,52 @@ export default function EmployeeDashboard() {
 
     const { user, logout } = useAuth();
 
+    const [employeeProfile, setEmployeeProfile] = useState(null);
     const [equipment, setEquipment] = useState([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState('');
     const [returningId, setReturningId] = useState(null);
 
-    const employeeId = user?.employeeId;
-
     const fetchEquipment = useCallback(async () => {
-
-        if (!employeeId) {
-            setError('No employee account is associated with this user.');
-            setLoading(false);
-            return;
-        }
-
         try {
             setLoading(true);
             setError('');
 
-            const response = await api.get('/equipment');
+            const meResponse = await api.get('/employees/me');
+            const currentEmployee = meResponse.data;
+            setEmployeeProfile(currentEmployee);
 
-            const data = Array.isArray(response.data)
-                ? response.data
-                : response.data?.content || [];
+            const equipmentResponse = await api.get(`/employees/${currentEmployee.id}/equipment`);
 
-            console.log('Logged in user:', user);
-            console.log('Employee ID:', employeeId);
-            console.log('All equipment:', data);
+            const data = Array.isArray(equipmentResponse.data)
+                ? equipmentResponse.data
+                : equipmentResponse.data?.content || [];
 
-            const assignedToMe = data.filter(
-                item =>
-                    item.status === 'ASSIGNED' &&
-                    item.assignedEmployeeId === employeeId
-            );
-
-            console.log('My equipment:', assignedToMe);
-
-            setEquipment(assignedToMe);
+            setEquipment(data);
 
         } catch (err) {
-
-            console.error('Failed to load equipment:', err);
+            console.error('Failed to load employee dashboard:', err);
 
             const message =
                 err.response?.data?.message ||
-                'Failed to load your equipment.';
+                'No employee account is associated with this user.';
 
             setError(message);
-
+            setEquipment([]);
         } finally {
             setLoading(false);
         }
-
-    }, [employeeId, user]);
+    }, []);
 
     useEffect(() => {
         fetchEquipment();
     }, [fetchEquipment]);
 
     const handleReturnEquipment = async (item) => {
+        const targetAssignmentId = item.assignmentId || item.activeAssignmentId;
 
-        if (!item.assignmentId) {
-            alert('This equipment does not contain an assignment ID.');
+        if (!targetAssignmentId) {
+            alert('This equipment does not contain an active assignment ID.');
             return;
         }
 
@@ -94,17 +77,13 @@ export default function EmployeeDashboard() {
         }
 
         try {
-
             setReturningId(item.id);
 
-            await api.post(
-                `/assignments/${item.assignmentId}/return`
-            );
+            await api.post(`/assignments/${targetAssignmentId}/return`);
 
             await fetchEquipment();
 
         } catch (err) {
-
             console.error('Failed to return equipment:', err);
 
             const message =
@@ -167,7 +146,9 @@ export default function EmployeeDashboard() {
                     </p>
 
                     <h2 className="text-3xl font-bold text-white mt-1">
-                        {user?.email}
+                        {employeeProfile
+                            ? `${employeeProfile.firstName} ${employeeProfile.lastName}`
+                            : user?.email}
                     </h2>
 
                     <p className="text-slate-400 mt-2">
@@ -219,11 +200,11 @@ export default function EmployeeDashboard() {
                                 </p>
 
                                 <p className="text-lg font-semibold text-white mt-2">
-                                    Employee
+                                    {employeeProfile?.position || 'Employee'}
                                 </p>
 
                                 <p className="text-xs text-slate-500 mt-1">
-                                    {user?.email}
+                                    {employeeProfile?.email || user?.email}
                                 </p>
                             </div>
 
@@ -356,7 +337,7 @@ export default function EmployeeDashboard() {
                                                     </p>
 
                                                     <p className="text-xs text-slate-500">
-                                                        Equipment
+                                                        {item.brand ? `${item.brand} ${item.model || ''}` : 'Equipment'}
                                                     </p>
                                                 </div>
 
@@ -490,7 +471,7 @@ export default function EmployeeDashboard() {
                                     </p>
 
                                     <p className="text-sm text-slate-200 mt-1">
-                                        {user?.email || 'N/A'}
+                                        {employeeProfile?.email || user?.email || 'N/A'}
                                     </p>
                                 </div>
 
@@ -510,7 +491,7 @@ export default function EmployeeDashboard() {
                                     </p>
 
                                     <p className="text-sm text-slate-200 mt-1 break-all">
-                                        {user?.employeeId || 'N/A'}
+                                        {employeeProfile?.id || 'N/A'}
                                     </p>
                                 </div>
 

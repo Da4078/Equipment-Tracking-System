@@ -1,40 +1,34 @@
 package org.daniel.equipmenttrackingsystem.service;
 
-import org.daniel.equipmenttrackingsystem.config.JwtService;
+import org.daniel.equipmenttrackingsystem.config.KeycloakAdminService;
 import org.daniel.equipmenttrackingsystem.dto.UserRequest;
 import org.daniel.equipmenttrackingsystem.dto.UserResponse;
+import org.daniel.equipmenttrackingsystem.enums.UserRole;
 import org.daniel.equipmenttrackingsystem.exception.BusinessRuleException;
 import org.daniel.equipmenttrackingsystem.exception.ResourceNotFoundException;
 import org.daniel.equipmenttrackingsystem.model.User;
 import org.daniel.equipmenttrackingsystem.repository.UserRepository;
-import org.springframework.security.core.authority.SimpleGrantedAuthority;
-import org.springframework.security.core.userdetails.UserDetails;
-import org.springframework.security.core.userdetails.UserDetailsService;
-import org.springframework.security.core.userdetails.UsernameNotFoundException;
-import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.HashSet;
 import java.util.List;
 import java.util.Optional;
+import java.util.Set;
 import java.util.UUID;
-import java.util.stream.Collectors;
 
 @Service
-public class UserService implements UserDetailsService {
+public class UserService {
 
     private final UserRepository userRepository;
-    private final PasswordEncoder passwordEncoder;
-    private final JwtService jwtService;
+    private final KeycloakAdminService keycloakAdminService;
 
     public UserService(
             UserRepository userRepository,
-            PasswordEncoder passwordEncoder,
-            JwtService jwtService
+            KeycloakAdminService keycloakAdminService
     ) {
         this.userRepository = userRepository;
-        this.passwordEncoder = passwordEncoder;
-        this.jwtService = jwtService;
+        this.keycloakAdminService = keycloakAdminService;
     }
 
     @Transactional
@@ -42,28 +36,22 @@ public class UserService implements UserDetailsService {
 
         if (userRepository.existsByEmail(userRequest.email())) {
             throw new BusinessRuleException(
-                    "User with email '" + userRequest.email() + "' already exists"
+                    "User with email '"
+                            + userRequest.email()
+                            + "' already exists"
             );
         }
 
-        User user = userRequest.toEntity();
+        keycloakAdminService.createAdminUser(userRequest);
 
-        user.setPassword(
-                passwordEncoder.encode(user.getPassword())
-        );
+        User user = new User();
+        user.setEmail(userRequest.email());
+        user.setPassword(null);
+        user.setRoles(new HashSet<>(Set.of(UserRole.ROLE_ADMIN)));
 
         User savedUser = userRepository.save(user);
 
-        UserDetails userDetails =
-                loadUserByUsername(savedUser.getEmail());
-
-        String token =
-                jwtService.generateToken(userDetails);
-
-        return UserResponse.fromEntity(
-                savedUser,
-                token
-        );
+        return UserResponse.fromEntity(savedUser);
     }
 
     @Transactional(readOnly = true)
@@ -91,7 +79,6 @@ public class UserService implements UserDetailsService {
             UUID id,
             UserRequest userRequest
     ) {
-
         User user = userRepository.findById(id)
                 .orElseThrow(() ->
                         new ResourceNotFoundException(
@@ -106,26 +93,15 @@ public class UserService implements UserDetailsService {
                 && userRepository.existsByEmail(newEmail)) {
 
             throw new BusinessRuleException(
-                    "User with email '" + newEmail + "' already exists"
+                    "User with email '"
+                            + newEmail
+                            + "' already exists"
             );
         }
 
         user.setEmail(newEmail);
 
-        if (userRequest.password() != null
-                && !userRequest.password().isBlank()) {
-
-            user.setPassword(
-                    passwordEncoder.encode(userRequest.password())
-            );
-        }
-
-        user.setRoles(
-                userRequest.toEntity().getRoles()
-        );
-
-        User updatedUser =
-                userRepository.save(user);
+        User updatedUser = userRepository.save(user);
 
         if (user.getEmployee() != null) {
             user.getEmployee().setEmail(newEmail);
@@ -136,7 +112,6 @@ public class UserService implements UserDetailsService {
 
     @Transactional
     public void deleteUser(UUID id) {
-
         User user = userRepository.findById(id)
                 .orElseThrow(() ->
                         new ResourceNotFoundException(
@@ -145,35 +120,5 @@ public class UserService implements UserDetailsService {
                 );
 
         userRepository.delete(user);
-    }
-
-    @Override
-    @Transactional(readOnly = true)
-    public UserDetails loadUserByUsername(String email)
-            throws UsernameNotFoundException {
-
-        User user =
-                userRepository.findByEmail(email)
-                        .orElseThrow(() ->
-                                new UsernameNotFoundException(
-                                        "User not found with email: " + email
-                                )
-                        );
-
-        var authorities =
-                user.getRoles()
-                        .stream()
-                        .map(role ->
-                                new SimpleGrantedAuthority(
-                                        role.name()
-                                )
-                        )
-                        .collect(Collectors.toSet());
-
-        return new org.springframework.security.core.userdetails.User(
-                user.getEmail(),
-                user.getPassword(),
-                authorities
-        );
     }
 }

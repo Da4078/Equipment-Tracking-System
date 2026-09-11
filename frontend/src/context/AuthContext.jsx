@@ -1,58 +1,114 @@
-import { createContext, useContext, useState } from 'react';
+import React, { createContext, useContext, useState, useEffect, useRef } from 'react';
+import keycloak from '../auth/keycloak';
 
 const AuthContext = createContext(null);
 
-export function AuthProvider({ children }) {
-    const [token, setToken] = useState(() =>
-        localStorage.getItem('token')
-    );
+export const AuthProvider = ({ children }) => {
+    const [isAuthenticated, setIsAuthenticated] = useState(false);
+    const [user, setUser] = useState(null);
+    const [loading, setLoading] = useState(true);
+    const isInitialized = useRef(false);
 
-    const [user, setUser] = useState(() => {
-        const savedUser = localStorage.getItem('user');
+    useEffect(() => {
+        if (isInitialized.current) return;
+        isInitialized.current = true;
 
-        if (!savedUser) {
-            return null;
-        }
+        keycloak
+            .init({
+                onLoad: 'check-sso',
+                checkLoginIframe: false,
+                pkceMethod: 'S256'
+            })
+            .then((authenticated) => {
+                console.log('Keycloak initialized. Authenticated:', authenticated);
+                setIsAuthenticated(authenticated);
+                if (authenticated) {
+                    extractUserData();
+                }
+            })
+            .catch((error) => {
+                console.error('Keycloak Init Error:', error);
+            })
+            .finally(() => {
+                setLoading(false);
+            });
 
-        try {
-            return JSON.parse(savedUser);
-        } catch {
-            localStorage.removeItem('user');
-            return null;
-        }
-    });
+        keycloak.onTokenExpired = () => {
+            keycloak
+                .updateToken(30)
+                .then((refreshed) => {
+                    if (refreshed) {
+                        extractUserData();
+                    }
+                })
+                .catch(() => {
+                    logout();
+                });
+        };
+    }, []);
 
-    const login = (authToken, userData) => {
-        localStorage.setItem('token', authToken);
-        localStorage.setItem('user', JSON.stringify(userData));
+    const extractUserData = () => {
+        const parsed = keycloak.tokenParsed || {};
 
-        setToken(authToken);
-        setUser(userData);
+        const realmRoles = parsed.realm_access?.roles || [];
+        const clientRoles = parsed.resource_access?.[keycloak.clientId]?.roles || [];
+
+        const allRoles = Array.from(new Set([...realmRoles, ...clientRoles]));
+
+        setUser({
+            id: parsed.sub,
+            email: parsed.email || parsed.preferred_username || '',
+            name: parsed.name || parsed.preferred_username || 'User',
+            roles: allRoles
+        });
+    };
+
+    const login = () => {
+        return keycloak.login({
+            redirectUri: window.location.origin + '/'
+        });
     };
 
     const logout = () => {
-        localStorage.removeItem('token');
-        localStorage.removeItem('user');
-
-        setToken(null);
         setUser(null);
+        setIsAuthenticated(false);
+        return keycloak.logout({
+            redirectUri: window.location.origin + '/login'
+        });
+    };
+
+    const getToken = async () => {
+        try {
+            await keycloak.updateToken(30);
+            return keycloak.token;
+        } catch (error) {
+            console.error('Failed to refresh Keycloak token:', error);
+            logout();
+            return null;
+        }
     };
 
     return (
         <AuthContext.Provider
             value={{
-                token,
+                isAuthenticated,
                 user,
+                loading,
                 login,
                 logout,
-                isAuthenticated: Boolean(token)
+                getToken,
+                keycloak
             }}
         >
             {children}
         </AuthContext.Provider>
     );
-}
+};
 
-export function useAuth() {
-    return useContext(AuthContext);
-}
+export const useAuth = () => {
+    const context = useContext(AuthContext);
+    if (!context) {
+        throw new Error('useAuth must be used within an AuthProvider');
+    }
+    return context;
+};
